@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>京东充电桩安装费用核对平台 · 原型</title>
+<style>
+  :root {
+    --primary: #0065BD;       /* 京东蓝 */
+    --primary-hover: #005AA8;
+    --primary-soft: #EFF6FF;
+    --bg: #F5F7FA;
+    --card: #ffffff;
+    --border: #E5E7EB;
+    --border-strong: #D1D5DB;
+    --text: #1F2937;
+    --muted: #6B7280;
+    --subtle: #9CA3AF;
+
+    --green: #27AE60;   --green-bg: #EAF7F0;
+    --amber: #B45309;   --amber-bg: #FEF6E7;
+    --red: #E74242;     --red-bg: #FDECEC;
+    --blue: #0065BD;    --blue-bg: #EFF6FF;
+    --gray: #4B5563;    --gray-bg: #F3F4F6;
+    --teal: #0D9488;    --teal-bg: #E6F7F4;
+    --orange: #C2410C;  --orange-bg: #FFF4EC;
+
+    --sidebar-bg: #1C2536;
+    --sidebar-w: 224px;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== 布局骨架 ===== */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: var(--sidebar-bg); color: #cbd5e1;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 18px 16px; color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--primary); display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #fff; font-weight: 700; flex-shrink: 0;
+  }
+  .brand .name { font-size: 14px; font-weight: 600; line-height: 1.25; }
+  .brand .sub { font-size: 11px; color: #94a3b8; font-weight: 400; }
+
+  .nav { padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px;
+    color: #cbd5e1; cursor: pointer; user-select: none;
+    font-size: 13.5px; font-weight: 500;
+    transition: background .12s, color .12s;
+    border: none; background: transparent; width: 100%; text-align: left;
+  }
+  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .nav-item.active { background: var(--primary); color: #fff; }
+  .nav-tag {
+    margin-left: auto; font-size: 10.5px; padding: 1px 7px;
+    border-radius: 999px; background: rgba(255,255,255,.12); color: #cbd5e1;
+  }
+  .nav-item.active .nav-tag { background: rgba(255,255,255,.2); color: #fff; }
+
+  .sidebar-foot {
+    margin-top: auto; padding: 14px 18px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    font-size: 11px; color: #64748b;
+  }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .topbar h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  .topbar .crumb { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .user-chip { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px;
+  }
+  .role-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--gray-bg); color: var(--gray); }
+
+  .content { padding: 24px; max-width: 1160px; width: 100%; margin: 0 auto; }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  /* ===== 通用组件 ===== */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card + .card { margin-top: 16px; }
+  .card-head {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .card-head h2 { margin: 0; font-size: 14.5px; font-weight: 600; }
+  .card-head .desc { font-size: 12px; color: var(--muted); }
+  .card-body { padding: 18px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 500; line-height: 1;
+    padding: 9px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; transition: background .12s, border-color .12s, color .12s;
+    white-space: nowrap; text-decoration: none;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline { background: #fff; border-color: var(--border-strong); color: var(--text); }
+  .btn-outline:hover { background: #f9fafb; }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  .btn-ghost:hover { background: #f3f4f6; color: var(--text); }
+  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 7px; }
+  .btn svg { width: 15px; height: 15px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 999px; }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+  .badge-gray { background: var(--gray-bg); color: var(--gray); }
+  .badge-teal { background: var(--teal-bg); color: var(--teal); }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data th {
+    text-align: left; font-size: 12px; font-weight: 600; color: var(--muted);
+    padding: 10px 14px; border-bottom: 1px solid var(--border); background: #fafbfc; white-space: nowrap;
+  }
+  table.data td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data tbody tr:hover { background: #EFF6FF; }
+  .cell-muted { color: var(--muted); }
+  .cell-strong { font-weight: 600; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mono { font-family: "SF Mono", ui-monospace, "Menlo", "Consolas", monospace; font-size: 12.5px; }
+  td.addr { max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar .left { display: flex; align-items: center; gap: 10px; }
+  .search {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    border: 1px solid var(--border-strong); border-radius: 8px; background: #fff; color: var(--subtle);
+    font-size: 13px; min-width: 260px;
+  }
+  .search input { border: none; outline: none; font-size: 13px; width: 100%; color: var(--text); background: transparent; }
+
+  /* 图例 */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* 统计卡 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+  .stat { background: var(--card); border: none; border-radius: var(--radius); padding: 18px 18px; box-shadow: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04); }
+  .stat .label { font-size: 12px; color: var(--muted); }
+  .stat .value { font-size: 32px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+  .stat .value small { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .stat .hint { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .stat.red .value { color: var(--red); }
+  .stat.amber .value { color: var(--amber); }
+
+  /* 核对对照表行配色（5 种状态） */
+  .row-green td { background: var(--green-bg) !important; }
+  .row-teal td { background: var(--teal-bg) !important; }
+  .row-amber td { background: var(--amber-bg) !important; }
+  .row-red td { background: var(--red-bg) !important; }
+  .row-gray td { background: var(--gray-bg) !important; }
+  .diff-pos { color: var(--green); font-weight: 600; }
+  .diff-neg { color: var(--red); font-weight: 600; }
+  .diff-zero { color: var(--green); font-weight: 600; }
+  .diff-pending { color: var(--gray); font-weight: 600; }
+  .auto-tag {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; padding: 1px 7px;
+    border-radius: 999px; background: var(--red-bg); color: var(--red); font-weight: 500; white-space: nowrap;
+  }
+
+  /* 面包屑 */
+  .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .breadcrumb a { color: var(--primary); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb .sep { color: var(--subtle); }
+  .breadcrumb .cur { color: var(--text); font-weight: 500; }
+
+  /* 今日待办 */
+  .todos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  .todo {
+    display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+    border-radius: var(--radius); cursor: pointer; border: 1px solid transparent;
+    box-shadow: var(--shadow); transition: box-shadow .12s, border-color .12s, transform .12s;
+  }
+  .todo:hover { box-shadow: 0 4px 14px rgba(16,24,40,.12); transform: translateY(-1px); }
+  .todo.active { box-shadow: 0 0 0 3px rgba(16,24,40,.06); }
+  .todo .num { font-size: 28px; font-weight: 700; line-height: 1; }
+  .todo .label { font-size: 13px; }
+  .todo .label .sub { font-size: 11.5px; opacity: .72; }
+  .todo.blue { background: var(--blue-bg); color: #1e40af; border-color: #dbeafe; }
+  .todo.red { background: var(--red-bg); color: #b91c1c; border-color: #fecaca; }
+  .todo.orange { background: var(--orange-bg); color: var(--orange); border-color: #fed7aa; }
+
+  /* Tab 栏 */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tab {
+    padding: 9px 14px; font-size: 13px; color: var(--muted); cursor: pointer;
+    border: none; background: none; border-bottom: 2px solid transparent; font-weight: 500;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+  .tab .count { font-size: 11px; background: var(--gray-bg); color: var(--muted); border-radius: 999px; padding: 1px 7px; margin-left: 5px; }
+  .tab.active .count { background: var(--primary-soft); color: var(--primary); }
+
+  /* 分页 */
+  .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .pagination .controls { display: flex; gap: 6px; align-items: center; }
+  .page-btn {
+    min-width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-strong); border-radius: 7px; background: #fff; cursor: pointer; font-size: 13px; color: var(--text);
+  }
+  .page-btn:hover:not(:disabled):not(.active) { border-color: var(--primary); color: var(--primary); }
+  .page-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .page-btn:disabled { opacity: .4; cursor: default; }
+
+  /* 表单 */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+  .field .hint { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%; padding: 9px 11px; font-size: 13.5px; color: var(--text);
+    border: 1px solid var(--border-strong); border-radius: 8px; background: #fff; outline: none; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  textarea { resize: vertical; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 24px; }
+  .kv { display: flex; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+  .kv .k { color: var(--muted); width: 110px; flex-shrink: 0; }
+  .kv .v { font-weight: 500; }
+
+  /* 金额汇总 */
+  .total-box { text-align: right; padding: 14px 18px; background: #fafbfc; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); }
+  .total-box .row { display: flex; justify-content: flex-end; gap: 24px; align-items: baseline; padding: 3px 0; font-size: 13px; color: var(--muted); }
+  .total-box .row.final { font-size: 15px; color: var(--text); }
+  .total-box .row.final .amt { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .amt { font-variant-numeric: tabular-nums; }
+
+  /* 服务商提交页 */
+  .link-banner {
+    display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 8px;
+    background: var(--blue-bg); border: 1px solid #dbeafe; color: #1e40af; font-size: 13px; margin-bottom: 16px;
+  }
+  .link-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .prov-section { margin-bottom: 20px; }
+  .prov-section:last-child { margin-bottom: 0; }
+  .sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .sec-head h3 { font-size: 13.5px; font-weight: 600; margin: 0; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--gray-bg); color: var(--muted); }
+  .tag-amber { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--amber-bg); color: var(--amber); font-weight: 500; }
+  .tag-orange { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--orange-bg); color: var(--orange); font-weight: 500; white-space: nowrap; }
+
+  .fee-row {
+    display: flex; align-items: center; gap: 14px; padding: 13px 14px;
+    border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: #fff;
+  }
+  .fee-row:last-child { margin-bottom: 0; }
+  .fee-row .name { flex: 1.4; min-width: 0; }
+  .fee-row .name .t { font-weight: 600; font-size: 13.5px; }
+  .fee-row .name .d { font-size: 11.5px; color: var(--muted); }
+  .fee-row .unit { flex-shrink: 0; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .fee-row .inp { flex: 1; min-width: 0; }
+  .fee-row .subtotal { width: 110px; text-align: right; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .fee-row.fixed { background: #fafbfc; }
+  .confirm { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; cursor: pointer; }
+  .confirm input { width: 15px; height: 15px; cursor: pointer; }
+
+  /* 弹窗 */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.45);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 480px; max-width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+  .modal-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-head h3 { margin: 0; font-size: 15px; }
+  .modal-body { padding: 18px 20px; }
+  .modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 18px; right: 18px; z-index: 200;
+    background: #111827; color: #fff; font-size: 13px; padding: 11px 16px; border-radius: 9px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px;
+    transform: translateY(-8px); opacity: 0; transition: all .2s ease; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast .tick { color: #34d399; font-weight: 700; }
+
+  .empty-actions { display: flex; gap: 8px; }
+  .action-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+  /* 看板图表 */
+  .stats.five { grid-template-columns: repeat(5, 1fr); }
+  .bar-chart { display: flex; align-items: flex-end; gap: 14px; height: 190px; padding: 0 4px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+  .bar-col .bar { width: 100%; max-width: 42px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #6FB4EE 0%, #0065BD 100%); }
+  .bar-col .bar.alt { background: linear-gradient(180deg, #C4DCF2 0%, #8FB6DC 100%); }
+  .bar-col .val { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar-col .lbl { font-size: 11px; color: var(--subtle); }
+  .hlist { display: flex; flex-direction: column; gap: 16px; }
+  .hlist .hrow { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .hlist .hrow .name { width: 92px; flex-shrink: 0; }
+  .hlist .track { flex: 1; height: 10px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+  .hlist .fill { height: 100%; border-radius: 999px; }
+  .hlist .pct { width: 92px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .table-wrap { overflow-x: auto; }
+
+  @media (max-width: 900px) {
+    .stats, .stats.five, .todos { grid-template-columns: 1fr 1fr; }
+    .grid2 { grid-template-columns: 1fr; }
+    .kv-grid { grid-template-columns: 1fr; }
+  }
+
+  /* 摘要条 */
+  .summary-bar {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 10px 18px; background: #f9fafb; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--muted);
+  }
+  .summary-bar b { font-weight: 700; color: var(--text); }
+  .summary-bar .red { color: var(--red); }
+  .summary-bar .sep { color: var(--border-strong); }
+
+  /* 双区块 */
+  .block { border-left: 4px solid var(--red); }
+  .block.passed { border-left: 4px solid var(--gray); border-top: 1px solid var(--border); }
+  .block-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; background: #fff; border-bottom: 1px solid var(--border);
+  }
+  .block-head.collapsible { cursor: pointer; user-select: none; }
+  .block-head.collapsible:hover { background: #fafbfc; }
+  .block-title { font-weight: 600; font-size: 13.5px; }
+  .block-count { font-size: 11.5px; padding: 1px 9px; border-radius: 999px; font-weight: 600; }
+  .block.pending .block-count { background: var(--red-bg); color: var(--red); }
+  .block.passed .block-count { background: var(--gray-bg); color: var(--gray); }
+  .block.passed .block-head { background: #fafbfc; }
+  .block.passed .block-title { color: var(--muted); }
+  .chevron { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .passed-body { display: none; }
+  .passed-body.open { display: block; }
+
+  /* 成功卡片 */
+  .success-card { background: var(--green-bg); padding: 44px 24px; text-align: center; border-top: 1px solid var(--border); }
+  .success-card .success-icon { font-size: 42px; line-height: 1; }
+  .success-card .success-title { font-size: 15px; font-weight: 600; color: var(--green); margin: 14px 0 20px; }
+  .btn-lg { font-size: 15px; padding: 12px 26px; border-radius: 9px; }
+
+  .match-select { font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: #fff; color: var(--text); max-width: 120px; }
+
+  /* 状态圆点标签（无背景） */
+  .status-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .status-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .st-gray { color: var(--gray); }
+  .st-blue { color: var(--blue); }
+  .st-green { color: var(--green); }
+  .st-teal { color: var(--teal); }
+  .st-red { color: var(--red); }
+
+  /* 工单列表行样式 */
+  #wo-table td { height: 48px; padding-top: 0; padding-bottom: 0; }
+  #wo-table td .btn { visibility: hidden; }
+  #wo-table tr:hover td .btn { visibility: visible; }
+
+  /* 核对工作台：竖向分隔线 + 行左侧色条 */
+  #reconcile-blocks .data th:nth-child(3),
+  #reconcile-blocks .data td:nth-child(3) { border-left: 1px solid var(--border); }
+  #reconcile-blocks .row-green td:first-child,
+  #reconcile-blocks .row-teal td:first-child { box-shadow: inset 4px 0 0 var(--green); }
+  #reconcile-blocks .row-amber td:first-child,
+  #reconcile-blocks .row-red td:first-child,
+  #reconcile-blocks .row-gray td:first-child { box-shadow: inset 4px 0 0 var(--red); }
+
+  /* 核对工作台：操作按钮区吸顶 */
+  .sticky-actions {
+    position: sticky; top: 72px; z-index: 15;
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 10px 14px; margin: 0 0 16px;
+    background: rgba(245,247,250,.92); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: 10px;
+  }
+
+  /* 服务商提交页 */
+  .wo-info { background: #F3F4F6; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 16px; }
+  .wo-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px 20px; }
+  .wo-info-grid .k { display: block; font-size: 12px; color: var(--muted); }
+  .wo-info-grid .v { font-size: 14px; font-weight: 600; }
+  .wo-info-note { margin-top: 10px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+
+  .submit-area { margin-top: 16px; }
+  .submit-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 18px; margin-bottom: 12px;
+  }
+  .submit-total span { font-size: 14px; color: var(--muted); }
+  .submit-total b { font-size: 24px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { background: #D63030; }
+  .btn-block { width: 100%; justify-content: center; padding: 13px 16px; font-size: 15px; font-weight: 600; border-radius: 9px; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 侧边导航 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">充</div>
+      <div>
+        <div class="name">充电桩费用核对平台</div>
+        <div class="sub">京东 · 内网工具</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-page="orders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        工单列表
+      </button>
+      <button class="nav-item" data-page="reconcile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M5 8v10a2 2 0 0 0 2 2h8"/><path d="M19 16V6a2 2 0 0 0-2-2H9"/></svg>
+        费用核对
+      </button>
+      <button class="nav-item" data-page="settlement">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        结算账单
+      </button>
+      <button class="nav-item" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        数据看板
+      </button>
+      <button class="nav-item" data-page="standards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        标准费用库
+      </button>
+      <button class="nav-item" data-page="provider">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        服务商提交
+        <span class="nav-tag">链接视图</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      原型演示 · 数据为虚构<br>仅供界面评审
+    </div>
+  </aside>
+
+  <!-- 主区域 -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="page-title">工单列表</h1>
+        <div class="crumb" id="page-crumb">工作台 / 工单列表</div>
+      </div>
+      <div class="user-chip">
+        <div class="avatar">周</div>
+        <div>周明</div>
+        <span class="role-badge">operator · 费用核对</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============ 页面 1：工单列表 ============ -->
+      <section class="page active" id="page-orders">
+        <div class="todos">
+          <div class="todo blue" data-filter="待核对" onclick="setFilter('待核对')">
+            <div class="num" id="todo-reconcile">0</div>
+            <div class="label">待核对工单<div class="sub">等待费用核对</div></div>
+          </div>
+          <div class="todo red" data-filter="争议中" onclick="setFilter('争议中')">
+            <div class="num" id="todo-dispute">0</div>
+            <div class="label">争议中工单<div class="sub">需人工裁决</div></div>
+          </div>
+          <div class="todo orange" data-filter="overdue" onclick="setFilter('overdue')">
+            <div class="num" id="todo-overdue">0</div>
+            <div class="label">超 3 天未提交<div class="sub">服务商尚未填表</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs" id="order-tabs">
+            <button class="tab active" data-f="all" onclick="setFilter('all')">全部<span class="count" id="c-all">0</span></button>
+            <button class="tab" data-f="待提交" onclick="setFilter('待提交')">待提交<span class="count" id="c-pending">0</span></button>
+            <button class="tab" data-f="待核对" onclick="setFilter('待核对')">待核对<span class="count" id="c-reconcile">0</span></button>
+            <button class="tab" data-f="已核对" onclick="setFilter('已核对')">已核对<span class="count" id="c-checked">0</span></button>
+            <button class="tab" data-f="已结算" onclick="setFilter('已结算')">已结算<span class="count" id="c-settled">0</span></button>
+            <button class="tab" data-f="争议中" onclick="setFilter('争议中')">争议中<span class="count" id="c-dispute">0</span></button>
+          </div>
+
+          <div class="toolbar" style="margin:14px 18px 4px; justify-content:flex-end">
+            <div class="search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="order-search" placeholder="搜索工单号 / 服务商名称…" oninput="setSearch(this.value)">
+            </div>
+            <button class="btn btn-primary" onclick="openModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              发起核对
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data" id="wo-table">
+              <thead>
+                <tr>
+                  <th>工单号</th>
+                  <th>客户名</th>
+                  <th>安装地址</th>
+                  <th>服务商</th>
+                  <th style="text-align:right">申报金额</th>
+                  <th>状态</th>
+                  <th style="text-align:right">操作</th>
+                </tr>
+              </thead>
+              <tbody id="order-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span id="pg-info">共 0 条</span>
+            <div class="controls" id="pg-controls"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 页面 2：费用核对工作台 ============ -->
+      <section class="page" id="page-reconcile">
+        <div class="breadcrumb">
+          <a onclick="go('orders')">工单列表</a>
+          <span class="sep">›</span>
+          <span class="cur">WO-2026-0912</span>
+        </div>
+
+        <div class="action-bar sticky-actions">
+          <button class="btn btn-outline" onclick="toast('已保存为草稿')">保存草稿</button>
+          <button class="btn btn-outline" style="color:var(--red);border-color:#fecaca" onclick="toast('已驳回，服务商将收到通知')">驳回</button>
+          <button class="btn btn-primary" onclick="confirmReconcile()">确认核对完成</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">当前工单</div>
+            <div class="value" style="font-size:17px">WO-2026-0912</div>
+            <div class="hint">城南安装 · 张伟</div>
+          </div>
+          <div class="stat">
+            <div class="label">服务商申报</div>
+            <div class="value">2,550<small> 元</small></div>
+            <div class="hint">提交于 2026-09-12 16:42</div>
+          </div>
+          <div class="stat amber">
+            <div class="label">系统核对</div>
+            <div class="value">2,340<small> 元</small></div>
+            <div class="hint">另 1 项未识别</div>
+          </div>
+          <div class="stat red">
+            <div class="label">差异</div>
+            <div class="value">210<small> 元</small></div>
+            <div class="hint">合同已含 60 · 金额差异 50 · 未识别 100</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>费用明细对照</h2>
+            <div class="legend">
+              <span><span class="swatch" style="background:var(--green-bg);border:1px solid var(--green)"></span>一致</span>
+              <span><span class="swatch" style="background:var(--teal-bg);border:1px solid var(--teal)"></span>合并一致</span>
+              <span><span class="swatch" style="background:var(--amber-bg);border:1px solid var(--amber)"></span>金额差异</span>
+              <span><span class="swatch" style="background:var(--red-bg);border:1px solid var(--red)"></span>合同已含</span>
+              <span><span class="swatch" style="background:var(--gray-bg);border:1px solid var(--gray)"></span>未识别</span>
+            </div>
+          </div>
+
+          <div class="summary-bar">
+            <span>本单：<b id="sum-pass">3</b> 项自动通过</span>
+            <span class="sep">|</span>
+            <span><span id="sum-pending-icon">⚠</span> <b id="sum-pending">3</b> 项需处理</span>
+            <span class="sep">|</span>
+            <span>待处理差异 <b id="sum-diff" class="red">+210 元</b></span>
+          </div>
+
+          <div id="reconcile-blocks">
+            <div class="block pending">
+              <div class="block-head">
+                <span class="block-title">需人工处理</span>
+                <span class="block-count" id="pending-count">3</span>
+              </div>
+              <div class="table-wrap">
+                <table class="data">
+                  <thead>
+                    <tr>
+                      <th style="width:15%">费用项</th>
+                      <th style="width:22%">服务商提交明细</th>
+                      <th style="width:26%">京东标准项对照</th>
+                      <th style="width:11%" class="num">差额</th>
+                      <th style="width:11%">状态</th>
+                      <th style="width:15%;text-align:right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pending-rows">
+                    <tr class="row-red" data-amount="60">
+                      <td class="cell-strong">搬运费</td>
+                      <td>1 项 · 60 元</td>
+                      <td><span class="auto-tag">系统自动标记</span> 合同已含于基础安装，不计费</td>
+                      <td class="num"><span class="diff-pos">+60 元</span></td>
+                      <td><span class="badge badge-red"><span class="dot"></span>合同已含</span></td>
+                      <td class="num"><button class="btn btn-outline btn-sm" onclick="handlePending(this, '已驳回搬运费 60 元')">确认驳回</button></td>
+                    </tr>
+                    <tr class="row-amber" data-amount="50">
+                      <td class="cell-strong">电缆穿管</td>
+                      <td>25 米 × 34 元/米 = 850 元</td>
+                      <td>25 米 × 32 元/米 = 800 元</td>
+                      <td class="num"><span class="diff-pos">+50 元</span></td>
+                      <td><span class="badge badge-amber"><span class="dot"></span>金额差异</span></td>
+                      <td class="num">
+                        <button class="btn btn-outline btn-sm" onclick="handlePending(this, '已接受差额 +50 元')">接受差额</button>
+                        <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:#fecaca" onclick="handlePending(this, '已驳回，服务商将收到通知')">驳回</button>
+                      </td>
+                    </tr>
+                    <tr class="row-gray" data-amount="100">
+                      <td class="cell-strong">其他增项 · 高空作业费</td>
+                      <td>1 项 · 100 元</td>
+                      <td><span class="cell-muted">未匹配到标准项，需人工识别</span></td>
+                      <td class="num"><span class="diff-pending">待定</span></td>
+                      <td><span class="badge badge-gray"><span class="dot"></span>未识别</span></td>
+                      <td class="num">
+                        <select class="match-select" onchange="manualMatch(this)">
+                          <option value="">手动匹配…</option>
+                          <option>桥架综合施工</option>
+                          <option>电缆穿管</option>
+                          <option>断路器安装</option>
+                          <option>其他增项</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:#fecaca" onclick="handlePending(this, '已驳回')">驳回</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="block passed">
+              <div class="block-head collapsible" onclick="togglePassed()">
+                <span class="block-title">已自动核对通过</span>
+                <span class="block-count" id="passed-count">3</span>
+                <span class="chevron" id="passed-chevron">▸</span>
+              </div>
+              <div class="passed-body" id="passed-body">
+                <div class="table-wrap">
+                  <table class="data">
+                    <thead>
+                      <tr>
+                        <th style="width:15%">费用项</th>
+                        <th style="width:22%">服务商提交明细</th>
+                        <th style="width:26%">京东标准项对照</th>
+                        <th style="width:11%" class="num">差额</th>
+                        <th style="width:11%">状态</th>
+                      </tr>
+                    </thead>
+                    <tbody id="passed-rows">
+                      <tr class="row-green">
+                        <td class="cell-strong">基础安装</td>
+                        <td>1 项 · 660 元</td>
+                        <td>固定 660 元（含入场搬运）</td>
+                        <td class="num"><span class="diff-zero">0 元</span></td>
+                        <td><span class="badge badge-green"><span class="dot"></span>一致</span></td>
+                      </tr>
+                      <tr class="row-teal">
+                        <td class="cell-strong">桥架综合施工</td>
+                        <td>材料费 400 元 + 安装费 240 元（已合并）</td>
+                        <td>8 米 × 80 元/米 = 640 元（含材料+安装）</td>
+                        <td class="num"><span class="diff-zero">0 元</span></td>
+                        <td><span class="badge badge-teal"><span class="dot"></span>合并一致</span></td>
+                      </tr>
+                      <tr class="row-green">
+                        <td class="cell-strong">断路器安装</td>
+                        <td>2 个 × 120 元/个 = 240 元</td>
+                        <td>2 个 × 120 元/个 = 240 元</td>
+                        <td class="num"><span class="diff-zero">0 元</span></td>
+                        <td><span class="badge badge-green"><span class="dot"></span>一致</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="success-card" id="success-card" hidden>
+            <div class="success-icon">✅</div>
+            <div class="success-title">所有费用项已自动核对通过，可直接确认</div>
+            <button class="btn btn-primary btn-lg" onclick="confirmReconcile()">一键确认核对完成</button>
+          </div>
+
+          <div class="total-box">
+            <div class="row"><span>服务商申报合计</span><span class="amt">2,550 元</span></div>
+            <div class="row"><span>系统自动核对合计</span><span class="amt">2,340 元</span></div>
+            <div class="row final"><span>待处理差异</span><span class="amt" id="total-diff" style="color:var(--red)">+210 元</span></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============ 页面 3：结算账单 ============ -->
+      <section class="page" id="page-settlement">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>结算账单 <span class="mono" style="color:var(--muted);font-weight:500">· SET-2026-0810-01</span></h2>
+              <div class="desc">工单 WO-2026-0910 · 生成于 2026-09-12 18:20</div>
+            </div>
+            <div class="empty-actions">
+              <span class="badge badge-green"><span class="dot"></span>已核对</span>
+              <button class="btn btn-outline btn-sm" onclick="copyLink('SET-2026-0810-01')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                复制链接
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="toast('账单 PDF 已开始生成（原型演示）')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出 PDF
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="kv-grid">
+              <div class="kv"><span class="k">工单号</span><span class="v mono">WO-2026-0910</span></div>
+              <div class="kv"><span class="k">客户名</span><span class="v">王强</span></div>
+              <div class="kv"><span class="k">安装地址</span><span class="v">大兴区亦庄经济开发区科创五街</span></div>
+              <div class="kv"><span class="k">服务商</span><span class="v">安家安装</span></div>
+              <div class="kv"><span class="k">核对人</span><span class="v">周明（operator）</span></div>
+              <div class="kv"><span class="k">核对完成时间</span><span class="v">2026-09-12 18:20</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>费用明细</h2></div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr><th>费用项</th><th>计费明细</th><th class="num">金额（元）</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="cell-strong">基础安装</td><td>固定费用（含入场搬运）</td><td class="num">660.00</td></tr>
+                <tr><td class="cell-strong">桥架综合施工</td><td>12 米 × 80 元/米</td><td class="num">960.00</td></tr>
+                <tr><td class="cell-strong">电缆穿管</td><td>30 米 × 32 元/米</td><td class="num">960.00</td></tr>
+                <tr><td class="cell-strong">断路器安装</td><td>1 个 × 120 元/个</td><td class="num">120.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="total-box">
+            <div class="row"><span>服务商原报金额</span><span class="amt">2,800 元</span></div>
+            <div class="row"><span>核减金额（桥架单价 85→80）</span><span class="amt" style="color:var(--green)">−60 元</span></div>
+            <div class="row final"><span>最终应付金额</span><span class="amt">2,700 元</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>调整记录</h2><div class="desc">所有核对过程可追溯</div></div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>时间</th><th>操作人</th><th>调整内容</th></tr></thead>
+              <tbody>
+                <tr><td class="cell-muted">2026-09-12 18:20</td><td>周明</td><td>确认核对完成，生成结算账单</td></tr>
+                <tr><td class="cell-muted">2026-09-12 17:55</td><td>周明</td><td>桥架综合施工单价由 85 元/米 核减为 80 元/米，核减 60 元</td></tr>
+                <tr><td class="cell-muted">2026-09-12 17:40</td><td>系统</td><td>服务商提交费用明细（原报 2,800 元），自动映射京东标准</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 页面：数据看板 ============ -->
+      <section class="page" id="page-dashboard">
+        <div class="stats five">
+          <div class="stat"><div class="label">本月工单</div><div class="value">48</div><div class="hint">较上月 +6</div></div>
+          <div class="stat"><div class="label">待核对</div><div class="value">7</div><div class="hint">其中 1 单争议</div></div>
+          <div class="stat"><div class="label">本月核对金额</div><div class="value">86,400<small> 元</small></div><div class="hint">已结算 72 单</div></div>
+          <div class="stat"><div class="label">平均核对耗时</div><div class="value">4.8<small> 分钟</small></div><div class="hint">目标 ≤ 5 分钟 · 已达成</div></div>
+          <div class="stat"><div class="label">争议率</div><div class="value">3.2<small>%</small></div><div class="hint">较上月 −1.1pp</div></div>
+        </div>
+
+        <div class="grid2" style="align-items:stretch">
+          <div class="card" style="margin-top:0">
+            <div class="card-head"><h2>近 6 个月核对金额</h2><div class="desc">单位：万元 · 9 月截至 13 日</div></div>
+            <div class="card-body">
+              <div class="bar-chart">
+                <div class="bar-col"><div class="val">5.2</div><div class="bar" style="height:55%"></div><div class="lbl">4月</div></div>
+                <div class="bar-col"><div class="val">4.8</div><div class="bar" style="height:51%"></div><div class="lbl">5月</div></div>
+                <div class="bar-col"><div class="val">6.3</div><div class="bar" style="height:66%"></div><div class="lbl">6月</div></div>
+                <div class="bar-col"><div class="val">5.9</div><div class="bar" style="height:62%"></div><div class="lbl">7月</div></div>
+                <div class="bar-col"><div class="val">7.2</div><div class="bar" style="height:76%"></div><div class="lbl">8月</div></div>
+                <div class="bar-col"><div class="val">3.4</div><div class="bar alt" style="height:36%"></div><div class="lbl">9月</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:0">
+            <div class="card-head"><h2>本月服务商金额占比</h2></div>
+            <div class="card-body">
+              <div class="hlist">
+                <div class="hrow"><span class="name">城南安装</span><div class="track"><div class="fill" style="width:38%;background:var(--primary)"></div></div><span class="pct">32,800 元 · 38%</span></div>
+                <div class="hrow"><span class="name">远程机电</span><div class="track"><div class="fill" style="width:34%;background:#60a5fa"></div></div><span class="pct">29,400 元 · 34%</span></div>
+                <div class="hrow"><span class="name">安家安装</span><div class="track"><div class="fill" style="width:28%;background:#93c5fd"></div></div><span class="pct">24,200 元 · 28%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>待处理差异</h2><div class="desc">需人工确认或裁决</div></div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>工单号</th><th>服务商</th><th>差异项</th><th class="num">金额</th><th>状态</th><th style="text-align:right">操作</th></tr></thead>
+              <tbody>
+                <tr><td class="mono cell-strong">WO-2026-0912</td><td>城南安装</td><td>搬运费（合同已含）+ 电缆单价 34 vs 32</td><td class="num">110 元</td><td><span class="badge badge-blue"><span class="dot"></span>待核对</span></td><td class="num"><button class="btn btn-outline btn-sm" onclick="go('reconcile')">进入核对</button></td></tr>
+                <tr><td class="mono cell-strong">WO-2026-0908</td><td>远程机电</td><td>桥架单价 85 vs 80 元/米</td><td class="num">40 元</td><td><span class="badge badge-red"><span class="dot"></span>争议中</span></td><td class="num"><button class="btn btn-outline btn-sm" onclick="go('reconcile')">进入核对</button></td></tr>
+                <tr><td class="mono cell-strong">WO-2026-0903</td><td>安家安装</td><td>断路器数量 3 vs 2 个</td><td class="num">120 元</td><td><span class="badge badge-blue"><span class="dot"></span>待核对</span></td><td class="num"><button class="btn btn-outline btn-sm" onclick="go('reconcile')">进入核对</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 页面：标准费用库 ============ -->
+      <section class="page" id="page-standards">
+        <div class="link-banner" style="background:var(--amber-bg);border-color:#fde68a;color:#92400e">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>标准费用库为全局固定，由 <b>admin</b> 维护；修改会留痕并对历史工单生效，请谨慎操作。</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="left">
+            <div class="search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="搜索费用项…">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openStdModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            新增标准项
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data" id="std-table">
+              <thead>
+                <tr><th>费用项</th><th>类型</th><th>计费方式</th><th>单价</th><th>说明</th><th>状态</th><th>最近更新</th><th style="text-align:right">操作</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="cell-strong">基础安装</td>
+                  <td><span class="badge badge-blue"><span class="dot"></span>基础项</span></td>
+                  <td class="cell-muted">固定费用</td>
+                  <td class="cell-strong">¥660.00</td>
+                  <td class="cell-muted">含入场搬运，合同基础费已含</td>
+                  <td><span class="badge badge-green"><span class="dot"></span>启用</span></td>
+                  <td class="cell-muted">2026-07-01 · 王管理员</td>
+                  <td class="num"><button class="btn btn-ghost btn-sm" onclick="toast('编辑功能（原型演示）')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-strong">桥架综合施工</td>
+                  <td><span class="badge badge-gray"><span class="dot"></span>增项</span></td>
+                  <td class="cell-muted">单价/米</td>
+                  <td class="cell-strong">¥80.00</td>
+                  <td class="cell-muted">含材料、配件、安装</td>
+                  <td><span class="badge badge-green"><span class="dot"></span>启用</span></td>
+                  <td class="cell-muted">2026-08-15 · 王管理员</td>
+                  <td class="num"><button class="btn btn-ghost btn-sm" onclick="toast('编辑功能（原型演示）')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-strong">电缆穿管</td>
+                  <td><span class="badge badge-gray"><span class="dot"></span>增项</span></td>
+                  <td class="cell-muted">单价/米</td>
+                  <td class="cell-strong">¥32.00</td>
+                  <td class="cell-muted">—</td>
+                  <td><span class="badge badge-green"><span class="dot"></span>启用</span></td>
+                  <td class="cell-muted">2026-07-01 · 王管理员</td>
+                  <td class="num"><button class="btn btn-ghost btn-sm" onclick="toast('编辑功能（原型演示）')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-strong">断路器安装</td>
+                  <td><span class="badge badge-gray"><span class="dot"></span>增项</span></td>
+                  <td class="cell-muted">固定/个</td>
+                  <td class="cell-strong">¥120.00</td>
+                  <td class="cell-muted">—</td>
+                  <td><span class="badge badge-green"><span class="dot"></span>启用</span></td>
+                  <td class="cell-muted">2026-07-01 · 王管理员</td>
+                  <td class="num"><button class="btn btn-ghost btn-sm" onclick="toast('编辑功能（原型演示）')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-strong">其他增项</td>
+                  <td><span class="badge badge-gray"><span class="dot"></span>增项</span></td>
+                  <td class="cell-muted">据实填写</td>
+                  <td class="cell-strong">—</td>
+                  <td class="cell-muted">据实填写，需审批</td>
+                  <td><span class="badge badge-green"><span class="dot"></span>启用</span></td>
+                  <td class="cell-muted">2026-07-01 · 王管理员</td>
+                  <td class="num"><button class="btn btn-ghost btn-sm" onclick="toast('编辑功能（原型演示）')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 页面：服务商提交 ============ -->
+      <section class="page" id="page-provider">
+        <div class="wo-info">
+          <div class="wo-info-grid">
+            <div><span class="k">工单号</span><span class="v mono">WO-2026-0912</span></div>
+            <div><span class="k">客户名</span><span class="v">张伟</span></div>
+            <div><span class="k">安装地址</span><span class="v">朝阳区望京 SOHO T1 地下停车场</span></div>
+            <div><span class="k">服务商</span><span class="v">城南安装</span></div>
+          </div>
+          <div class="wo-info-note">通过工单链接提交费用明细 · 无需登录</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>按京东标准费用项填写</h2>
+            <div class="desc">单价由系统预设，仅需填写数量/米数</div>
+          </div>
+          <div class="card-body">
+
+            <div class="prov-section">
+              <div class="sec-head"><h3>① 基础安装</h3><span class="tag">标准价 · 不可修改</span></div>
+              <div class="fee-row fixed">
+                <div class="name"><div class="t">基础安装</div><div class="d">固定费用 · 含入场搬运，合同基础费已含</div></div>
+                <div class="unit">标准价 660 元</div>
+                <label class="confirm"><input type="checkbox" id="confirm-base" checked onchange="calcTotal()"> 我已确认</label>
+                <div class="subtotal">660 元</div>
+              </div>
+            </div>
+
+            <div class="prov-section">
+              <div class="sec-head"><h3>② 桥架综合施工</h3><span class="tag">单价 80 元/米</span></div>
+              <div class="fee-row">
+                <div class="name"><div class="t">桥架综合施工</div><div class="d">含材料、配件、安装（增项）</div></div>
+                <div class="unit">单价 80 元/米</div>
+                <div class="inp"><input type="number" id="f-bridge" value="8" min="0" oninput="calcTotal()" placeholder="实际米数"></div>
+                <div class="subtotal" id="s-bridge">640 元</div>
+              </div>
+            </div>
+
+            <div class="prov-section">
+              <div class="sec-head"><h3>③ 电缆穿管</h3><span class="tag">单价 32 元/米</span></div>
+              <div class="fee-row">
+                <div class="name"><div class="t">电缆穿管</div><div class="d">增项</div></div>
+                <div class="unit">单价 32 元/米</div>
+                <div class="inp"><input type="number" id="f-cable" value="25" min="0" oninput="calcTotal()" placeholder="实际米数"></div>
+                <div class="subtotal" id="s-cable">800 元</div>
+              </div>
+            </div>
+
+            <div class="prov-section">
+              <div class="sec-head"><h3>④ 断路器安装</h3><span class="tag">单价 120 元/个</span></div>
+              <div class="fee-row">
+                <div class="name"><div class="t">断路器安装</div><div class="d">增项</div></div>
+                <div class="unit">单价 120 元/个</div>
+                <div class="inp"><input type="number" id="f-breaker" value="2" min="0" oninput="calcTotal()" placeholder="数量（个）"></div>
+                <div class="subtotal" id="s-breaker">240 元</div>
+              </div>
+            </div>
+
+            <div class="prov-section">
+              <div class="sec-head"><h3>⑤ 其他增项</h3><span class="tag-amber">需人工审批</span></div>
+              <div class="fee-row">
+                <div class="name"><div class="t">其他增项</div><div class="d">据实填写，提交后需人工审批</div></div>
+                <div class="inp"><input type="text" id="f-other-name" placeholder="增项名称（如：高空作业费）" value="高空作业费"></div>
+                <div class="inp" style="max-width:140px"><input type="number" id="f-other" value="100" min="0" oninput="calcTotal()" placeholder="金额"></div>
+                <div class="subtotal" id="s-other">100 元</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="submit-area">
+          <div class="submit-total"><span>本次提交合计</span><b id="submit-total">2,440 元</b></div>
+          <button class="btn btn-danger btn-block" onclick="submitProvider()">提交费用明细</button>
+          <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="toast('已保存草稿（原型演示）')">保存草稿</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- 发起核对弹窗 -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>发起费用核对</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()" style="font-size:18px">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>京东工单号</label>
+        <input type="text" id="m-order-id" placeholder="如 WO-2026-0912，从京东服务+系统复制">
+      </div>
+      <div class="field">
+        <label>服务商名称</label>
+        <select id="m-provider">
+          <option>城南安装</option>
+          <option>远程机电</option>
+          <option>安家安装</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>项目地址</label>
+        <input type="text" id="m-address" placeholder="如 北京市朝阳区望京SOHO">
+      </div>
+      <div class="field">
+        <label>安装完成日期</label>
+        <input type="date" id="m-install-date">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="createOrder()">确认发起</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增标准项弹窗 -->
+<div class="modal-backdrop" id="modal-std">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>新增标准费用项</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeStdModal()" style="font-size:18px">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>费用项名称</label>
+        <input type="text" id="std-name" placeholder="如：接地装置安装">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>类型</label>
+          <select id="std-type"><option>基础项</option><option>增项</option></select>
+        </div>
+        <div class="field">
+          <label>计费方式</label>
+          <select id="std-bill"><option>固定费用</option><option>单价/米</option><option>固定/个</option><option>据实填写</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>单价 / 固定金额 <span class="hint">元，据实填写则留空</span></label>
+        <input type="number" id="std-price" placeholder="如：80">
+      </div>
+      <div class="field">
+        <label>说明 <span class="hint">选填</span></label>
+        <input type="text" id="std-desc" placeholder="如：含材料、配件、安装">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeStdModal()">取消</button>
+      <button class="btn btn-primary" onclick="createStd()">保存标准项</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="tick">✓</span><span id="toast-msg">已完成</span></div>
+
+<script>
+  // ===== 工单数据 =====
+  var ORDERS = [
+    { id:'WO-2026-0912', customer:'张伟', address:'朝阳区望京 SOHO T1 地下停车场', provider:'城南安装', status:'待核对', days:1, amount:2550 },
+    { id:'WO-2026-0911', customer:'李娜', address:'海淀区中关村软件园二期 15 号楼', provider:'远程机电', status:'待提交', days:5, amount:null },
+    { id:'WO-2026-0910', customer:'王强', address:'大兴区亦庄经济开发区科创五街', provider:'安家安装', status:'已核对', days:3, amount:2800 },
+    { id:'WO-2026-0909', customer:'刘洋', address:'丰台区总部基地 6 区 2 号楼', provider:'城南安装', status:'已结算', days:4, amount:1980 },
+    { id:'WO-2026-0908', customer:'陈静', address:'通州区万达广场地下车库 B2', provider:'远程机电', status:'争议中', days:8, amount:2240 },
+    { id:'WO-2026-0907', customer:'赵敏', address:'昌平区回龙观西大街 18 号', provider:'安家安装', status:'待核对', days:2, amount:3120 },
+    { id:'WO-2026-0906', customer:'孙磊', address:'顺义区天竺空港工业区', provider:'城南安装', status:'已结算', days:7, amount:1740 },
+    { id:'WO-2026-0905', customer:'周芳', address:'房山区长阳半岛广场', provider:'远程机电', status:'待提交', days:9, amount:null },
+    { id:'WO-2026-0904', customer:'吴涛', address:'石景山区万达广场 A 座', provider:'安家安装', status:'已核对', days:9, amount:2660 },
+    { id:'WO-2026-0903', customer:'郑丽', address:'门头沟区龙湖长安天街', provider:'城南安装', status:'待核对', days:10, amount:1880 },
+    { id:'WO-2026-0902', customer:'冯军', address:'西城区金融街购物中心', provider:'远程机电', status:'已结算', days:11, amount:2380 },
+    { id:'WO-2026-0901', customer:'蒋琳', address:'东城区王府井东方广场', provider:'安家安装', status:'待提交', days:6, amount:null },
+    { id:'WO-2026-0831', customer:'沈强', address:'朝阳区三里屯太古里', provider:'城南安装', status:'争议中', days:13, amount:1860 },
+    { id:'WO-2026-0830', customer:'韩雪', address:'海淀区五道口购物中心', provider:'远程机电', status:'已核对', days:14, amount:2540 },
+    { id:'WO-2026-0829', customer:'杨帆', address:'大兴区龙湖时代天街', provider:'安家安装', status:'待核对', days:15, amount:2980 },
+    { id:'WO-2026-0828', customer:'朱婷', address:'丰台区万达广场', provider:'城南安装', status:'已结算', days:16, amount:1650 },
+    { id:'WO-2026-0827', customer:'秦刚', address:'通州区运河商务区', provider:'远程机电', status:'待提交', days:17, amount:null },
+    { id:'WO-2026-0826', customer:'许静', address:'昌平区天通苑', provider:'安家安装', status:'已核对', days:18, amount:2410 },
+    { id:'WO-2026-0825', customer:'何勇', address:'顺义区后沙峪', provider:'城南安装', status:'待核对', days:19, amount:2720 },
+    { id:'WO-2026-0824', customer:'吕鹏', address:'房山区良乡', provider:'远程机电', status:'已结算', days:20, amount:1880 },
+    { id:'WO-2026-0823', customer:'施婷', address:'石景山区古城', provider:'安家安装', status:'待提交', days:2, amount:null },
+    { id:'WO-2026-0822', customer:'张涛', address:'门头沟区永定', provider:'城南安装', status:'待核对', days:22, amount:3060 },
+    { id:'WO-2026-0821', customer:'孔明', address:'西城区西单大悦城', provider:'远程机电', status:'已结算', days:23, amount:2320 },
+    { id:'WO-2026-0820', customer:'曹阳', address:'东城区东直门来福士', provider:'安家安装', status:'已核对', days:24, amount:2490 },
+    { id:'WO-2026-0819', customer:'董洁', address:'朝阳区国贸商城', provider:'城南安装', status:'待提交', days:25, amount:null },
+    { id:'WO-2026-0818', customer:'谢军', address:'海淀区中关村大街', provider:'远程机电', status:'待核对', days:26, amount:2810 }
+  ];
+
+  // ===== 路由（hash） =====
+  var routes = {
+    orders:     { title: '工单列表', crumb: '工作台 / 工单列表' },
+    reconcile:  { title: '费用核对工作台', crumb: '工作台 / 费用核对' },
+    settlement: { title: '结算账单', crumb: '工作台 / 结算账单' },
+    dashboard:  { title: '数据看板', crumb: '工作台 / 数据看板' },
+    standards:  { title: '标准费用库', crumb: '管理 / 标准费用库' },
+    provider:   { title: '服务商提交', crumb: '链接视图 / 费用明细提交' }
+  };
+
+  function currentRoute() {
+    var seg = location.hash.replace(/^#\/?/, '').split('/')[0];
+    return routes[seg] ? seg : 'orders';
+  }
+
+  function render() {
+    var route = currentRoute();
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('active', el.dataset.page === route);
+    });
+    document.querySelectorAll('.page').forEach(function (el) {
+      el.classList.toggle('active', el.id === 'page-' + route);
+    });
+    document.getElementById('page-title').textContent = routes[route].title;
+    document.getElementById('page-crumb').textContent = routes[route].crumb;
+    window.scrollTo(0, 0);
+  }
+
+  function go(page) { location.hash = '#/' + page; }
+  window.addEventListener('hashchange', render);
+
+  document.querySelectorAll('.nav-item').forEach(function (el) {
+    el.addEventListener('click', function () { go(el.dataset.page); });
+  });
+
+  // ===== 工单列表：筛选 / 搜索 / 分页 =====
+  var orderFilter = 'all';
+  var orderSearch = '';
+  var orderPage = 1;
+  var PAGE_SIZE = 20;
+
+  function filteredOrders() {
+    return ORDERS.filter(function (o) {
+      if (orderFilter === 'overdue') {
+        if (!(o.status === '待提交' && o.days > 3)) return false;
+      } else if (orderFilter !== 'all') {
+        if (o.status !== orderFilter) return false;
+      }
+      if (orderSearch) {
+        var q = orderSearch.toLowerCase();
+        if (o.id.toLowerCase().indexOf(q) < 0 && o.provider.toLowerCase().indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function statusBadge(s) {
+    var map = { '待提交':'st-gray', '待核对':'st-blue', '已核对':'st-green', '已结算':'st-teal', '争议中':'st-red' };
+    return '<span class="status-tag ' + map[s] + '"><span class="dot"></span>' + s + '</span>';
+  }
+
+  function amountText(o) {
+    return o.amount ? o.amount.toLocaleString('zh-CN') + ' 元' : '—';
+  }
+
+  function actionButton(o) {
+    if (o.status === '待提交') {
+      return '<button class="btn btn-outline btn-sm" onclick="copySubmitLink(\'' + o.id + '\')">复制提交链接</button>';
+    }
+    if (o.status === '待核对' || o.status === '争议中') {
+      return '<button class="btn btn-outline btn-sm" onclick="go(\'reconcile\')">进入核对</button>';
+    }
+    return '<button class="btn btn-outline btn-sm" onclick="go(\'settlement\')">查看账单</button>';
+  }
+
+  function renderOrders() {
+    var list = filteredOrders();
+    var total = list.length;
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (orderPage > pages) orderPage = pages;
+    var start = (orderPage - 1) * PAGE_SIZE;
+    var pageItems = list.slice(start, start + PAGE_SIZE);
+
+    var tbody = document.getElementById('order-tbody');
+    if (pageItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="cell-muted" style="text-align:center;padding:36px">没有符合条件的工单</td></tr>';
+    } else {
+      tbody.innerHTML = pageItems.map(function (o) {
+        var overdue = (o.status === '待提交' && o.days > 3) ? ' <span class="tag-orange">超3天</span>' : '';
+        return '<tr>' +
+          '<td class="mono cell-strong">' + o.id + '</td>' +
+          '<td>' + o.customer + '</td>' +
+          '<td class="cell-muted addr" title="' + o.address + '">' + o.address + '</td>' +
+          '<td>' + o.provider + '</td>' +
+          '<td class="num cell-strong">' + amountText(o) + '</td>' +
+          '<td>' + statusBadge(o.status) + overdue + '</td>' +
+          '<td class="num">' + actionButton(o) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('pg-info').textContent = '共 ' + total + ' 条 · 第 ' + orderPage + ' / ' + pages + ' 页';
+    var pg = document.getElementById('pg-controls');
+    var html = '<button class="page-btn" ' + (orderPage <= 1 ? 'disabled' : '') + ' onclick="goPage(' + (orderPage - 1) + ')">‹</button>';
+    for (var i = 1; i <= pages; i++) {
+      html += '<button class="page-btn' + (i === orderPage ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+    }
+    html += '<button class="page-btn" ' + (orderPage >= pages ? 'disabled' : '') + ' onclick="goPage(' + (orderPage + 1) + ')">›</button>';
+    pg.innerHTML = html;
+
+    document.querySelectorAll('#order-tabs .tab').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.f === orderFilter);
+    });
+    document.querySelectorAll('.todo').forEach(function (c) {
+      c.classList.toggle('active', c.dataset.filter === orderFilter);
+    });
+  }
+
+  function setFilter(f) { orderFilter = f; orderPage = 1; renderOrders(); }
+  function setSearch(v) { orderSearch = v; orderPage = 1; renderOrders(); }
+  function goPage(p) { orderPage = p; renderOrders(); }
+
+  function initTodos() {
+    var cnt = function (s) { return ORDERS.filter(function (o) { return o.status === s; }).length; };
+    document.getElementById('todo-reconcile').textContent = cnt('待核对');
+    document.getElementById('todo-dispute').textContent = cnt('争议中');
+    document.getElementById('todo-overdue').textContent = ORDERS.filter(function (o) { return o.status === '待提交' && o.days > 3; }).length;
+    document.getElementById('c-all').textContent = ORDERS.length;
+    document.getElementById('c-pending').textContent = cnt('待提交');
+    document.getElementById('c-reconcile').textContent = cnt('待核对');
+    document.getElementById('c-checked').textContent = cnt('已核对');
+    document.getElementById('c-settled').textContent = cnt('已结算');
+    document.getElementById('c-dispute').textContent = cnt('争议中');
+  }
+
+  // ===== 服务商提交页金额计算 =====
+  function calcTotal() {
+    var bridge = +document.getElementById('f-bridge').value || 0;
+    var cable  = +document.getElementById('f-cable').value || 0;
+    var brk    = +document.getElementById('f-breaker').value || 0;
+    var other  = +document.getElementById('f-other').value || 0;
+    var base = document.getElementById('confirm-base').checked ? 660 : 0;
+    document.getElementById('s-bridge').textContent  = (bridge * 80) + ' 元';
+    document.getElementById('s-cable').textContent   = (cable * 32) + ' 元';
+    document.getElementById('s-breaker').textContent = (brk * 120) + ' 元';
+    document.getElementById('s-other').textContent   = other + ' 元';
+    var total = base + bridge * 80 + cable * 32 + brk * 120 + other;
+    document.getElementById('submit-total').textContent = total.toLocaleString('zh-CN') + ' 元';
+  }
+
+  function submitProvider() {
+    if (!document.getElementById('confirm-base').checked) {
+      toast('请先确认基础安装费用');
+      return;
+    }
+    toast('费用明细已提交，工单进入「待核对」状态');
+  }
+
+  // ===== 核对工作台 =====
+  function confirmReconcile() {
+    toast('核对完成，已生成结算账单');
+  }
+
+  function handlePending(el, msg) {
+    var row = el.closest('tr');
+    if (row) row.remove();
+    updateReconcile();
+    if (msg) toast(msg);
+  }
+
+  function manualMatch(sel) {
+    var v = sel.value;
+    if (!v) return;
+    handlePending(sel, '已手动匹配到「' + v + '」');
+  }
+
+  function togglePassed() {
+    var body = document.getElementById('passed-body');
+    var chev = document.getElementById('passed-chevron');
+    var open = body.classList.toggle('open');
+    chev.classList.toggle('open', open);
+    chev.textContent = open ? '▾' : '▸';
+  }
+
+  function updateReconcile() {
+    var pendingRows = document.querySelectorAll('#pending-rows tr');
+    var passedRows = document.querySelectorAll('#passed-rows tr');
+    var pending = pendingRows.length;
+    var passed = passedRows.length;
+    var diff = 0;
+    pendingRows.forEach(function (r) { diff += +r.dataset.amount || 0; });
+
+    document.getElementById('sum-pass').textContent = passed;
+    document.getElementById('sum-pending').textContent = pending;
+    document.getElementById('sum-diff').textContent = diff > 0 ? ('+' + diff + ' 元') : '0 元';
+    document.getElementById('pending-count').textContent = pending;
+    document.getElementById('passed-count').textContent = passed;
+    document.getElementById('total-diff').textContent = diff > 0 ? ('+' + diff + ' 元') : '0 元';
+    document.getElementById('sum-pending-icon').textContent = pending === 0 ? '✅' : '⚠';
+
+    document.getElementById('reconcile-blocks').style.display = pending === 0 ? 'none' : '';
+    document.getElementById('success-card').hidden = pending !== 0;
+  }
+
+  // ===== Toast =====
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  // ===== 复制链接 =====
+  function copyLink(code) {
+    var url = 'https://jd-charger-admin.pages.dev/submit/' + code;
+    var done = function () { toast('链接已复制：…/submit/' + code); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { done(); });
+    } else { done(); }
+  }
+
+  function copySubmitLink(code) {
+    var url = 'https://jd-charger-admin.pages.dev/submit/' + code;
+    var done = function () { toast('链接已复制，请发送给服务商'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, function () { done(); });
+    } else { done(); }
+  }
+
+  // ===== 发起核对弹窗 =====
+  function todayStr() {
+    var d = new Date();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function openModal() {
+    document.getElementById('m-install-date').value = todayStr();
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  document.getElementById('modal').addEventListener('click', function (e) {
+    if (e.target === this) closeModal();
+  });
+
+  function createOrder() {
+    var oid = (document.getElementById('m-order-id').value || '').trim();
+    var prov = document.getElementById('m-provider').value;
+    var addr = (document.getElementById('m-address').value || '').trim();
+    var date = document.getElementById('m-install-date').value;
+    if (!oid) { toast('请填写京东工单号'); return; }
+    if (!addr) { toast('请填写项目地址'); return; }
+    if (!date) { toast('请选择安装完成日期'); return; }
+    ORDERS.unshift({ id: oid, customer: '—', address: addr, provider: prov, status: '待提交', days: 0, amount: null, installDate: date });
+    closeModal();
+    document.getElementById('m-order-id').value = '';
+    document.getElementById('m-address').value = '';
+    orderFilter = 'all'; orderPage = 1;
+    initTodos(); renderOrders();
+    toast('已发起核对，工单进入「待提交」状态');
+  }
+
+  // ===== 标准费用库 =====
+  function openStdModal() { document.getElementById('modal-std').classList.add('open'); }
+  function closeStdModal() { document.getElementById('modal-std').classList.remove('open'); }
+  document.getElementById('modal-std').addEventListener('click', function (e) {
+    if (e.target === this) closeStdModal();
+  });
+
+  function createStd() {
+    var name = (document.getElementById('std-name').value || '').trim();
+    if (!name) { toast('请填写费用项名称'); return; }
+    var type = document.getElementById('std-type').value;
+    var bill = document.getElementById('std-bill').value;
+    var price = document.getElementById('std-price').value;
+    var desc = document.getElementById('std-desc').value || '—';
+    var priceText = bill === '据实填写' ? '—' : ('¥' + (+price || 0).toFixed(2));
+    var tbody = document.querySelector('#std-table tbody');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="cell-strong">' + name + '</td>' +
+      '<td><span class="badge ' + (type === '基础项' ? 'badge-blue' : 'badge-gray') + '"><span class="dot"></span>' + type + '</span></td>' +
+      '<td class="cell-muted">' + bill + '</td>' +
+      '<td class="cell-strong">' + priceText + '</td>' +
+      '<td class="cell-muted">' + desc + '</td>' +
+      '<td><span class="badge badge-green"><span class="dot"></span>启用</span></td>' +
+      '<td class="cell-muted">2026-09-13 · 王管理员</td>' +
+      '<td class="num"><button class="btn btn-ghost btn-sm" onclick="toast(\'编辑功能（原型演示）\')">编辑</button> <button class="btn btn-ghost btn-sm" onclick="toggleStd(this)">停用</button></td>';
+    tbody.insertBefore(tr, tbody.firstChild);
+    closeStdModal();
+    document.getElementById('std-name').value = '';
+    document.getElementById('std-price').value = '';
+    document.getElementById('std-desc').value = '';
+    toast('标准项「' + name + '」已添加');
+  }
+
+  function toggleStd(btn) {
+    var badge = btn.closest('tr').querySelectorAll('td')[5].querySelector('.badge');
+    if (btn.textContent === '停用') {
+      badge.className = 'badge badge-gray';
+      badge.innerHTML = '<span class="dot"></span>停用';
+      btn.textContent = '启用';
+    } else {
+      badge.className = 'badge badge-green';
+      badge.innerHTML = '<span class="dot"></span>启用';
+      btn.textContent = '停用';
+    }
+  }
+
+  // ===== 初始化 =====
+  if (!location.hash) { location.hash = '#/orders'; }
+  initTodos();
+  renderOrders();
+  calcTotal();
+  updateReconcile();
+  render();
+</script>
+</body>
+</html>
