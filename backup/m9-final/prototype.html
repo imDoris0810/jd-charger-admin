@@ -94,18 +94,19 @@
         </div>
 
         <div class="card">
-          <div class="card-head"><h2>最优先事项<span class="desc">　阻断正式提交的排在前面</span></h2></div>
-          <div class="card-body" id="l1-top"></div>
-        </div>
-
-        <div class="card">
           <div class="card-head">
-            <h2>五动作分组<span class="desc">　按下一步动作组织 · 数量为 0 的分组折叠为标签</span></h2>
+            <h2>五动作分组<span class="desc">　按下一步动作组织，点击进入任务队列</span></h2>
           </div>
           <div class="card-body">
             <div class="action-groups" id="l1-groups"></div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-head"><h2>最优先事项<span class="desc">　阻断正式提交的排在前面</span></h2></div>
+          <div class="card-body" id="l1-top"></div>
+        </div>
+
         <div class="card">
           <div class="card-head">
             <h2>我负责的工单<span class="desc">　当前角色为责任岗位</span></h2>
@@ -230,30 +231,21 @@
 
         <div class="card">
           <div class="card-head"><h2>差异分类聚合<span class="desc">　五类 · 由普通程序分类</span></h2></div>
-          <div class="card-body">
-            <div class="w6-cat-row" id="w6-cats"></div>
-            <div class="w6-cats-note" id="w6-cats-note"></div>
-          </div>
+          <div class="card-body"><div class="w6-cats" id="w6-cats"></div></div>
         </div>
 
         <div class="card">
           <div class="card-head">
-            <h2>待对账数据<span class="desc">　工单父级 + 一行一个差异对象 · 点击差异进入单工单对账阶段</span></h2>
+            <h2>待对账数据<span class="desc">　点击行进入单工单对账阶段</span></h2>
             <button class="btn btn-sm" onclick="openDrawer('timeline')">查看处理时间线</button>
           </div>
           <div class="card-body tight">
-            <!-- 差异对象级栅格：父级行整行跨列（colspan=10）做工单组头，
-                 子行严格 10 列对齐表头，列宽由 colgroup 固定，不随内容漂移。 -->
-            <table class="data w6-d">
-              <colgroup>
-                <col class="c-diffid"><col class="c-obj"><col class="c-cat"><col class="c-tags"><col class="c-qty">
-                <col class="c-amt"><col class="c-basis"><col class="c-owner"><col class="c-state"><col class="c-act">
-              </colgroup>
+            <table class="data">
               <thead>
                 <tr>
-                  <th>差异ID</th><th>差异对象</th><th>主分类</th><th>类型标签</th>
-                  <th>数量差异</th><th class="num">金额差异</th><th>依据状态</th>
-                  <th>责任角色</th><th>时效 / 状态</th><th></th>
+                  <th>京东工单号</th><th>服务商 / 项目</th><th>状态</th>
+                  <th>差异对象</th><th>分类</th><th class="num">差额</th>
+                  <th>责任角色</th><th>时效</th><th></th>
                 </tr>
               </thead>
               <tbody id="w6-body"></tbody>
@@ -322,6 +314,10 @@
           <div class="card-body" id="w5-mappings"></div>
         </div>
 
+        <div class="card">
+          <div class="card-head"><h2>AI 映射建议<span class="desc">　结构化草稿 · 须逐项人工决定</span></h2></div>
+          <div class="card-body" id="w5-ai"></div>
+        </div>
 
         <div class="card">
           <div class="card-head"><h2>模拟转换与程序校验<span class="desc">　确定性程序输出</span></h2></div>

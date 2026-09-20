@@ -369,10 +369,7 @@ function renderL1() {
   if (g) {
     if (canL2) {
       // 动作入口卡：数量 + 一句任务解释 + 最紧急事项 + 明确进入动作
-      const active = ACTION_GROUPS.filter(gr => b.counts[gr.key] > 0);
-      const zeros = ACTION_GROUPS.filter(gr => b.counts[gr.key] === 0);
-      g.style.gridTemplateColumns = `repeat(${Math.max(active.length, 1)}, minmax(0,1fr))`;
-      g.innerHTML = active.map(gr => {
+      g.innerHTML = ACTION_GROUPS.map(gr => {
         const n = b.counts[gr.key];
         const list = tasksInGroup(CURRENT_ROLE, gr.key);
         const urgent = list.slice().sort((x, y) => {
@@ -392,12 +389,11 @@ function renderL1() {
           ${urgent ? `<div class="ag-urgent" title="${urgent.title}">最紧急：${urgent.title}${
             isOverdue(urgent.deadline) ? '<span class="overdue"> · 已超期</span>' : ''}</div>`
             : '<div class="ag-urgent muted">当前无此类任务</div>'}
-          <button class="btn btn-sm ${n && gr.key !== 'waiting' ? 'btn-primary' : ''}" ${n ? '' : 'disabled'}
+          <button class="btn btn-sm ${n ? 'btn-primary' : ''}" ${n ? '' : 'disabled'}
             onclick="event.stopPropagation();go('l2');setTodoGroup('${gr.key}')">
-            ${gr.key === 'waiting' ? '查看进展' : '进入处理'}</button>
+            ${n ? '进入处理' : '暂无需处理'}</button>
         </div>`;
-      }).join('') + (zeros.length ? `<div class="ag-zero-row">${zeros.map(gr =>
-        `<span class="ag-chip" title="${AG_DESC[gr.key](0)}">${gr.label} <b>0</b></span>`).join('')}</div>` : '');
+      }).join('');
     } else {
       // 无任务队列权限：不给可点击入口，避免制造「本角色有 L2 作业权限」的预期。
       // 五分组只作只读状态提示。
@@ -484,8 +480,8 @@ function taskCardHTML(t, compact) {
     </div>` : '';
 
   const buttons = grp === 'waiting'
-    ? `<button class="btn btn-sm" onclick="goCanvas('${t.orderId}','${stage}')">查看进展</button>
-       <button class="btn btn-sm" disabled title="本项在对方手中，不得代办">等待 ${role.title}</button>`
+    ? `<button class="btn btn-sm" onclick="goCanvas('${t.orderId}','${stage}')">进入画布</button>
+       <button class="btn btn-sm" disabled title="等待 ${role.title} 处理">等待 ${role.title}</button>`
     : grp === 'failed'
       ? `<button class="btn btn-sm btn-primary" onclick="goCanvas('${t.orderId}','${stage}')">查询原系统版本</button>
          <button class="btn btn-sm" onclick="goCanvas('${t.orderId}','${stage}')">从最近节点续办</button>`
@@ -643,40 +639,33 @@ function renderW6() {
   //    因此筛选结果数可能大于该卡片展示的主分类数量。
   const catCount = {}; DIFF_CATEGORIES.forEach(c => catCount[c] = 0);
   flatDiffs.forEach(d => { catCount[d.primaryCategory] = (catCount[d.primaryCategory] || 0) + 1; });
-  setHTML('w6-cats',
-    DIFF_CATEGORIES.map(c => `<button class="w6-cat-chip ${catCount[c] ? 'has' : ''}${fc === c ? ' on' : ''}"
-      onclick="w6FilterCat('${c}')" title="点击按该类型筛选差异对象">${c} <b>${catCount[c]}</b></button>`).join('')
-    + (fc ? `<button class="btn btn-sm btn-ghost" onclick="w6FilterCat('${fc}')">清除筛选</button>` : ''));
-  // 说明文字不进标签栅格：否则其长文本会把标签轨道撑宽，标签就不再紧凑
-  setHTML('w6-cats-note', `按<b>主分类</b>统计（五项之和 = 唯一差异对象总数）；
-       点击筛选会同时命中该对象的<b>全部差异标签</b>，因此下方结果数可能大于标签数字。`);
+  setHTML('w6-cats', DIFF_CATEGORIES.map(c => `
+    <div class="w6-cat ${catCount[c] ? 'has' : ''}${fc === c ? ' on' : ''}" onclick="w6FilterCat('${c}')">
+      <div class="w6-num">${catCount[c]}</div><div class="w6-lbl">${c}</div>
+    </div>`).join('')
+    + `<div class="w6-cats-note">顶部分类按<b>主分类</b>统计（五项之和 = 唯一差异对象总数）；
+       点击筛选会同时命中该对象的<b>全部差异标签</b>，因此筛选结果数可能大于卡片数字。</div>`);
 
-  // ── 待对账数据：工单分组父级（整行跨列组头） + 一行一个差异对象 ──
-  //    父级 colspan 必须等于栅格列数（10），否则子行与表头不再逐列对齐。
+  // ── 待对账数据：工单分组父级 + 一行一个差异对象 ──
   const html = rows.map(r => {
     const R = r.R;
     const childDiffs = r.diffs;
     const sumAbs = childDiffs.reduce((s, d) => s + Math.abs(d.amountDiff), 0);
-    const stateBadge = r.state === '差异中'
-      ? '<span class="badge badge-red"><span class="dot"></span>差异中</span>'
-      : r.state === '已确认'
-        ? '<span class="badge badge-green"><span class="dot"></span>已确认</span>'
-        : `<span class="badge badge-${r.state === '待确认' ? 'amber' : 'gray'}"><span class="dot"></span>${r.state}</span>`;
+    const a0 = ROLES[r.o.ownerRole];
     const parent = `<tr class="w6-parent">
-      <td colspan="10">
-        <div class="w6-pbar">
-          <span class="mono w6-pid">${r.o.id}</span>
-          <span class="w6-pmeta">${r.o.provider} · ${r.o.project}</span>
-          <span class="w6-pmeta">账期 ${r.period}</span>
-          ${stateBadge}
-          <span class="w6-pmeta">${childDiffs.length
-            ? `差异对象 <b>${childDiffs.length}</b> 个${fc ? `（已按 ${fc} 过滤）` : ''}`
-            : '<span class="tag-teal">账目一致，无差异对象</span>'}</span>
-          <span class="spacer"></span>
-          <span class="w6-psum">差额合计 <b style="color:${sumAbs ? 'var(--amber)' : 'var(--muted)'}">${sumAbs ? sumAbs.toFixed(2) : '—'}</b></span>
-          <button class="btn btn-sm" onclick="goCanvas('${r.o.id}','recon')">进入对账 ▸</button>
-        </div>
-      </td>
+      <td class="mono">${r.o.id}</td>
+      <td>${r.o.provider}<div class="sub">${r.o.project}</div></td>
+      <td>${r.period}</td>
+      <td>${r.state === '差异中'
+        ? '<span class="badge badge-red"><span class="dot"></span>差异中</span>'
+        : r.state === '已确认'
+          ? '<span class="badge badge-green"><span class="dot"></span>已确认</span>'
+          : `<span class="badge badge-${r.state === '待确认' ? 'amber' : 'gray'}"><span class="dot"></span>${r.state}</span>`}</td>
+      <td colspan="3">${childDiffs.length
+        ? `差异对象 <b>${childDiffs.length}</b> 个${fc ? `（已按 ${fc} 过滤）` : ''}`
+        : '<span class="tag-teal">账目一致，无差异对象</span>'}</td>
+      <td class="num" style="color:${sumAbs ? 'var(--amber)' : 'var(--muted)'}">${sumAbs ? sumAbs.toFixed(2) : '—'}</td>
+      <td><button class="btn btn-sm" onclick="goCanvas('${r.o.id}','recon')">进入对账 ▸</button></td>
     </tr>`;
 
     if (!childDiffs.length) return parent;
@@ -686,25 +675,20 @@ function renderW6() {
       const late = d.deadline ? isOverdue(d.deadline)
         : (r.o.tasks[0] && isOverdue(r.o.tasks[0].deadline));
       const dl = d.deadline || (r.o.tasks[0] && r.o.tasks[0].deadline) || null;
-      const objTxt = d.obj || d.jd || '—';
-      const tagTxt = d.categoryTags.join('、');
-      const stateTxt = r.state === '待确认' ? '处理中 · 待确认' : r.state === '已确认' ? '已确认' : '待处理';
-      const timeTxt = dl ? (late ? '已超期' : '截止 ' + dl.slice(5, 16)) : '—';
       return `<tr class="w6-child clickable" onclick="goCanvas('${r.o.id}','recon','${d.differenceId}')">
-        <td class="mono w6-indent">${d.differenceId}</td>
-        <td class="w6-wrap" title="${objTxt}">${objTxt}</td>
-        <td><span class="tag-amber">${d.primaryCategory}</span></td>
-        <td class="w6-wrap" title="${tagTxt}">${d.categoryTags.map(c => `<span class="tag">${c}</span>`).join(' ')}</td>
-        <td>${d.qtyDiff ? `${d.qtyDiff.sp}${d.qtyDiff.unit || ''} / ${d.qtyDiff.jd}${d.qtyDiff.unit || ''}` : '—'}</td>
-        <td class="num">${d.amountDiff ? d.amountDiff.toFixed(2) : '—'}</td>
-        <td title="${d.basisStatus}">${d.basisStatus === '缺少依据材料'
+        <td class="mono w6-indent" data-l="差异对象 ID">${d.differenceId}</td>
+        <td data-l="差异对象">${d.obj || d.jd || '—'}</td>
+        <td data-l="主分类"><span class="tag-amber">${d.primaryCategory}</span></td>
+        <td data-l="类型标签">${d.categoryTags.map(c => `<span class="tag">${c}</span>`).join(' ')}</td>
+        <td data-l="数量差异">${d.qtyDiff ? `${d.qtyDiff.sp}${d.qtyDiff.unit || ''} / ${d.qtyDiff.jd}${d.qtyDiff.unit || ''}` : '—'}</td>
+        <td class="num" data-l="金额差异">${d.amountDiff ? d.amountDiff.toFixed(2) : '—'}</td>
+        <td data-l="依据状态">${d.basisStatus === '缺少依据材料'
           ? '<span class="tag" style="background:var(--red-bg);color:var(--red)">缺少依据材料</span>'
           : `<span class="tag-teal">${d.basisStatus}</span>`}</td>
-        <td>${rr ? rr.title : '—'}</td>
-        <td class="w6-state" title="${timeTxt} · ${stateTxt}">
-          ${late ? '<span class="overdue">已超期</span>' : timeTxt}
-          <span class="w6-substate">${stateTxt}</span></td>
-        <td><button class="btn btn-sm" title="处理该差异 ${d.differenceId}">处理 ▸</button></td>
+        <td data-l="责任角色">${rr ? rr.title : '—'}</td>
+        <td data-l="时效 / 状态">${dl ? (late ? '<span class="overdue">已超期</span>' : '截止 ' + dl.slice(5, 16)) : '—'}
+          <div class="sub">${r.state === '待确认' ? '处理中 · 待确认' : r.state === '已确认' ? '已确认' : '待处理'}</div></td>
+        <td><button class="btn btn-sm">处理该差异 ▸</button></td>
       </tr>`;
     }).join('');
 
@@ -1923,10 +1907,7 @@ function w5SetAccount(k) { W5_ACCOUNT = k; renderW5(); }
 
 /* AI 映射建议草稿 —— 仅演示结构，不接真实 AI，必须人工逐项决定 */
 function aiSuggestions(v) {
-  // 已被人工采纳且非 AI 来源的字段不再建议；待决字段仍产生建议
-  const decided = new Set(v.fieldMappings
-    .filter(m => m.humanDecision === 'accepted' && m.source !== 'ai_suggestion')
-    .map(m => m.localField));
+  const existing = new Set(v.fieldMappings.map(m => m.localField));
   const pool = [
     { localField: '桥架材料', jdField: '桥架综合施工', rule: 'merge', conf: 'high',
       evidence: ['配置草稿历史版本映射表第 1–2 行', '近 3 单转换结果一致'],
@@ -1939,7 +1920,7 @@ function aiSuggestions(v) {
       evidence: [], missing: ['输入中没有该字段的任何历史记录或合同依据。'],
       question: '无法判断该字段是否应映射，是否需要人工补充依据？' }
   ];
-  return pool.filter(s => !decided.has(s.localField));
+  return pool.filter(s => !existing.has(s.localField));
 }
 
 function renderW5() {
@@ -2024,30 +2005,10 @@ function renderW5() {
     <table class="data">
       <thead><tr><th>本地字段</th><th>京东字段</th><th>转换规则</th><th>适用条件</th>
         <th>建议依据</th><th>置信度</th><th>人工决定</th><th>决定人 / 时间</th></tr></thead>
-      <tbody>${v.fieldMappings.map(m => {
-        const sug = editable ? aiSuggestions(v).find(s => s.localField === m.localField) : null;
-        const needDecision = m.humanDecision !== 'accepted';
-        const inlineAI = (sug && needDecision) ? `
-          <tr class="ai-inline"><td colspan="8">
-            <div class="ai-inline-body">
-              <span class="badge badge-ai"><span class="dot"></span>AI 建议草稿</span>
-              <span class="tag-ai">字段映射建议</span>
-              <span class="ai-inline-text">建议 <b>${sug.localField}</b> → <b>${sug.jdField || '（无对应项）'}</b>（${convLabel(sug.rule)}）
-                　置信度 ${CONFIDENCE_LABEL[sug.conf]}</span>
-              <span class="spacer"></span>
-              <button class="btn btn-sm btn-ghost" onclick="openEvidenceDrawer('${v.versionId}')">查看依据</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${sug.localField}','rejected')">拒绝</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${sug.localField}','noted')">补充依据</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${sug.localField}','modified')">修改</button>
-              <button class="btn btn-sm btn-primary" onclick="w5AiDecideInline('${v.versionId}','${sug.localField}','accepted')">采纳</button>
-            </div>
-            ${(sug.missing || []).length ? `<div class="gaps" style="margin-top:8px">${sug.missing.map(g =>
-              `<div class="gap missing"><span class="ic">证据不足</span><span>${g}</span></div>`).join('')}</div>` : ''}
-          </td></tr>` : '';
-        return `<tr>
+      <tbody>${v.fieldMappings.map(m => `<tr>
         <td class="mono">${m.localField}</td>
         <td>${m.jdField}</td>
-        <td>${convLabel(m.conversionRule)}<span class="tech">${m.conversionRule}</span></td>
+        <td>${m.conversionRule}</td>
         <td>${m.applicableCondition}</td>
         <td class="sub">${m.evidence}</td>
         <td>${m.confidence === 'high' ? '<span class="tag-teal">高</span>'
@@ -2056,26 +2017,8 @@ function renderW5() {
         <td>${m.humanDecision === 'accepted' ? '<span class="tag-teal">已采纳</span>'
           : m.humanDecision === 'rejected' ? '<span class="tag">已拒绝</span>'
           : '<span class="tag-amber">待人工决定</span>'}</td>
-        <td>${m.decisionBy ? accName(m.decisionBy) : '—'}<div class="sub">${m.decisionAt || ''}</div></td>
-      </tr>` + inlineAI; }).join('')
-      + (editable ? aiSuggestions(v).filter(s => !v.fieldMappings.some(m => m.localField === s.localField))
-          .map(s => `<tr class="ai-inline"><td colspan="8">
-            <div class="ai-inline-body">
-              <span class="badge badge-ai"><span class="dot"></span>AI 建议草稿</span>
-              <span class="tag-ai">字段映射建议</span>
-              <span class="ai-inline-text">建议新增映射 <b>${s.localField}</b> → <b>${s.jdField || '（无对应项）'}</b>（${convLabel(s.rule)}）
-                　置信度 ${CONFIDENCE_LABEL[s.conf]}</span>
-              <span class="spacer"></span>
-              <button class="btn btn-sm btn-ghost" onclick="openEvidenceDrawer('${v.versionId}')">查看依据</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${s.localField}','rejected')">拒绝</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${s.localField}','noted')">补充依据</button>
-              <button class="btn btn-sm" onclick="w5AiDecideInline('${v.versionId}','${s.localField}','modified')">修改</button>
-              <button class="btn btn-sm btn-primary" onclick="w5AiDecideInline('${v.versionId}','${s.localField}','accepted')">采纳</button>
-            </div>
-            ${(s.missing || []).length ? `<div class="gaps" style="margin-top:8px">${s.missing.map(g =>
-              `<div class="gap missing"><span class="ic">证据不足</span><span>${g}</span></div>`).join('')}</div>` : ''}
-          </td></tr>`).join('') : '')
-      }</tbody>
+        <td>${m.decisionBy || '—'}<div class="sub">${m.decisionAt || ''}</div></td>
+      </tr>`).join('')}</tbody>
     </table>
     ${editable ? '' : `<div class="note" style="margin-top:12px"><span>ⓘ</span>
       <span>该版本状态为「${CONFIG_STATUS[v.status].label}」，映射规则<b>只读</b>；
@@ -2131,7 +2074,7 @@ function renderW5() {
       <tbody>${conv.map(c => `<tr>
         <td class="mono">${c.local}</td>
         <td>${c.mapped ? c.jd : '<span style="color:var(--red)">unable_to_map</span>'}</td>
-        <td>${c.rule ? convLabel(c.rule) + '<span class="tech">' + c.rule + '</span>' : '—'}</td>
+        <td>${c.rule || '—'}</td>
         <td class="mono">${c.ruleId || '—'}</td>
       </tr>`).join('')}</tbody>
     </table>
@@ -2322,37 +2265,6 @@ function w5NewVersion() {
   renderW5();
 }
 
-function w5AiDecideInline(versionId, localField, decision) {
-  const v = versionById(versionId);
-  if (!v) return;
-  const sug = aiSuggestions(v).find(s => s.localField === localField);
-  if (!sug) return;
-  if (decision === 'rejected') {
-    const m = v.fieldMappings.find(x => x.localField === localField);
-    if (m) { m.humanDecision = 'rejected'; m.decisionBy = W5_ACCOUNT; m.decisionAt = NOW; }
-    renderW5(); return;
-  }
-  if (decision === 'noted') {
-    const m = v.fieldMappings.find(x => x.localField === localField);
-    if (m) { m.evidence = (m.evidence || '') + '；人工补充依据：已提供合同条款摘录'; m.humanDecision = 'accepted';
-             m.decisionBy = W5_ACCOUNT; m.decisionAt = NOW; }
-    renderW5(); return;
-  }
-  const exists = v.fieldMappings.find(x => x.localField === localField);
-  if (exists) {
-    exists.humanDecision = 'accepted';
-    if (decision === 'modified') exists.applicableCondition = (exists.applicableCondition || '') + '（人工修改）';
-    exists.decisionBy = W5_ACCOUNT; exists.decisionAt = NOW;
-  } else {
-    v.fieldMappings.push({
-      mappingRuleId: 'MR-AI-' + (v.fieldMappings.length + 1), localField: sug.localField,
-      jdField: sug.jdField, conversionRule: sug.rule, applicableCondition: sug.question || '经人工采纳的 AI 建议',
-      evidence: sug.evidence.join('；') || '（人工补充）', confidence: sug.conf,
-      source: 'ai_suggestion', humanDecision: 'accepted', decisionBy: W5_ACCOUNT, decisionAt: NOW });
-  }
-  renderW5();
-}
-
 function w5AiDecide(idx, decision) {
   const v = w5Version();
   if (!v) return;
@@ -2414,7 +2326,7 @@ function aiDraftCard(draft, opts) {
       ${draft.evidenceGaps.length ? `<div class="gaps">
         ${draft.evidenceGaps.map(g => `<div class="gap missing"><span class="ic">证据不足</span><span>${g}</span></div>`).join('')}
       </div>` : ''}
-      ${!(opts && opts.actions === false) ? `
+      ${opts && opts.actions !== false ? `
       <div class="layer-head" style="margin:12px 0 0">
         <span class="spacer"></span>
         <button class="btn btn-sm" onclick="c5Decide('${draft.scenario}','rejected')">拒绝</button>

@@ -646,37 +646,30 @@ function renderW6() {
   setHTML('w6-cats',
     DIFF_CATEGORIES.map(c => `<button class="w6-cat-chip ${catCount[c] ? 'has' : ''}${fc === c ? ' on' : ''}"
       onclick="w6FilterCat('${c}')" title="点击按该类型筛选差异对象">${c} <b>${catCount[c]}</b></button>`).join('')
-    + (fc ? `<button class="btn btn-sm btn-ghost" onclick="w6FilterCat('${fc}')">清除筛选</button>` : ''));
-  // 说明文字不进标签栅格：否则其长文本会把标签轨道撑宽，标签就不再紧凑
-  setHTML('w6-cats-note', `按<b>主分类</b>统计（五项之和 = 唯一差异对象总数）；
-       点击筛选会同时命中该对象的<b>全部差异标签</b>，因此下方结果数可能大于标签数字。`);
+    + (fc ? `<button class="btn btn-sm btn-ghost" onclick="w6FilterCat('${fc}')">清除筛选</button>` : '')
+    + `<span class="w6-cats-note">按<b>主分类</b>统计（五项之和 = 唯一差异对象总数）；
+       点击筛选会同时命中该对象的<b>全部差异标签</b>，因此下方结果数可能大于标签数字。</span>`);
 
-  // ── 待对账数据：工单分组父级（整行跨列组头） + 一行一个差异对象 ──
-  //    父级 colspan 必须等于栅格列数（10），否则子行与表头不再逐列对齐。
+  // ── 待对账数据：工单分组父级 + 一行一个差异对象 ──
   const html = rows.map(r => {
     const R = r.R;
     const childDiffs = r.diffs;
     const sumAbs = childDiffs.reduce((s, d) => s + Math.abs(d.amountDiff), 0);
-    const stateBadge = r.state === '差异中'
-      ? '<span class="badge badge-red"><span class="dot"></span>差异中</span>'
-      : r.state === '已确认'
-        ? '<span class="badge badge-green"><span class="dot"></span>已确认</span>'
-        : `<span class="badge badge-${r.state === '待确认' ? 'amber' : 'gray'}"><span class="dot"></span>${r.state}</span>`;
+    const a0 = ROLES[r.o.ownerRole];
     const parent = `<tr class="w6-parent">
-      <td colspan="10">
-        <div class="w6-pbar">
-          <span class="mono w6-pid">${r.o.id}</span>
-          <span class="w6-pmeta">${r.o.provider} · ${r.o.project}</span>
-          <span class="w6-pmeta">账期 ${r.period}</span>
-          ${stateBadge}
-          <span class="w6-pmeta">${childDiffs.length
-            ? `差异对象 <b>${childDiffs.length}</b> 个${fc ? `（已按 ${fc} 过滤）` : ''}`
-            : '<span class="tag-teal">账目一致，无差异对象</span>'}</span>
-          <span class="spacer"></span>
-          <span class="w6-psum">差额合计 <b style="color:${sumAbs ? 'var(--amber)' : 'var(--muted)'}">${sumAbs ? sumAbs.toFixed(2) : '—'}</b></span>
-          <button class="btn btn-sm" onclick="goCanvas('${r.o.id}','recon')">进入对账 ▸</button>
-        </div>
-      </td>
+      <td class="mono">${r.o.id}</td>
+      <td>${r.o.provider}<div class="sub">${r.o.project}</div></td>
+      <td>${r.period}</td>
+      <td>${r.state === '差异中'
+        ? '<span class="badge badge-red"><span class="dot"></span>差异中</span>'
+        : r.state === '已确认'
+          ? '<span class="badge badge-green"><span class="dot"></span>已确认</span>'
+          : `<span class="badge badge-${r.state === '待确认' ? 'amber' : 'gray'}"><span class="dot"></span>${r.state}</span>`}</td>
+      <td colspan="3">${childDiffs.length
+        ? `差异对象 <b>${childDiffs.length}</b> 个${fc ? `（已按 ${fc} 过滤）` : ''}`
+        : '<span class="tag-teal">账目一致，无差异对象</span>'}</td>
+      <td class="num" style="color:${sumAbs ? 'var(--amber)' : 'var(--muted)'}">${sumAbs ? sumAbs.toFixed(2) : '—'}</td>
+      <td><button class="btn btn-sm" onclick="goCanvas('${r.o.id}','recon')">进入对账 ▸</button></td>
     </tr>`;
 
     if (!childDiffs.length) return parent;
@@ -686,25 +679,20 @@ function renderW6() {
       const late = d.deadline ? isOverdue(d.deadline)
         : (r.o.tasks[0] && isOverdue(r.o.tasks[0].deadline));
       const dl = d.deadline || (r.o.tasks[0] && r.o.tasks[0].deadline) || null;
-      const objTxt = d.obj || d.jd || '—';
-      const tagTxt = d.categoryTags.join('、');
-      const stateTxt = r.state === '待确认' ? '处理中 · 待确认' : r.state === '已确认' ? '已确认' : '待处理';
-      const timeTxt = dl ? (late ? '已超期' : '截止 ' + dl.slice(5, 16)) : '—';
       return `<tr class="w6-child clickable" onclick="goCanvas('${r.o.id}','recon','${d.differenceId}')">
-        <td class="mono w6-indent">${d.differenceId}</td>
-        <td class="w6-wrap" title="${objTxt}">${objTxt}</td>
-        <td><span class="tag-amber">${d.primaryCategory}</span></td>
-        <td class="w6-wrap" title="${tagTxt}">${d.categoryTags.map(c => `<span class="tag">${c}</span>`).join(' ')}</td>
-        <td>${d.qtyDiff ? `${d.qtyDiff.sp}${d.qtyDiff.unit || ''} / ${d.qtyDiff.jd}${d.qtyDiff.unit || ''}` : '—'}</td>
-        <td class="num">${d.amountDiff ? d.amountDiff.toFixed(2) : '—'}</td>
-        <td title="${d.basisStatus}">${d.basisStatus === '缺少依据材料'
+        <td class="mono w6-indent" data-l="差异对象 ID">${d.differenceId}</td>
+        <td data-l="差异对象">${d.obj || d.jd || '—'}</td>
+        <td data-l="主分类"><span class="tag-amber">${d.primaryCategory}</span></td>
+        <td data-l="类型标签">${d.categoryTags.map(c => `<span class="tag">${c}</span>`).join(' ')}</td>
+        <td data-l="数量差异">${d.qtyDiff ? `${d.qtyDiff.sp}${d.qtyDiff.unit || ''} / ${d.qtyDiff.jd}${d.qtyDiff.unit || ''}` : '—'}</td>
+        <td class="num" data-l="金额差异">${d.amountDiff ? d.amountDiff.toFixed(2) : '—'}</td>
+        <td data-l="依据状态">${d.basisStatus === '缺少依据材料'
           ? '<span class="tag" style="background:var(--red-bg);color:var(--red)">缺少依据材料</span>'
           : `<span class="tag-teal">${d.basisStatus}</span>`}</td>
-        <td>${rr ? rr.title : '—'}</td>
-        <td class="w6-state" title="${timeTxt} · ${stateTxt}">
-          ${late ? '<span class="overdue">已超期</span>' : timeTxt}
-          <span class="w6-substate">${stateTxt}</span></td>
-        <td><button class="btn btn-sm" title="处理该差异 ${d.differenceId}">处理 ▸</button></td>
+        <td data-l="责任角色">${rr ? rr.title : '—'}</td>
+        <td data-l="时效 / 状态">${dl ? (late ? '<span class="overdue">已超期</span>' : '截止 ' + dl.slice(5, 16)) : '—'}
+          <div class="sub">${r.state === '待确认' ? '处理中 · 待确认' : r.state === '已确认' ? '已确认' : '待处理'}</div></td>
+        <td><button class="btn btn-sm">处理该差异 ▸</button></td>
       </tr>`;
     }).join('');
 
@@ -2414,7 +2402,7 @@ function aiDraftCard(draft, opts) {
       ${draft.evidenceGaps.length ? `<div class="gaps">
         ${draft.evidenceGaps.map(g => `<div class="gap missing"><span class="ic">证据不足</span><span>${g}</span></div>`).join('')}
       </div>` : ''}
-      ${!(opts && opts.actions === false) ? `
+      ${opts && opts.actions !== false ? `
       <div class="layer-head" style="margin:12px 0 0">
         <span class="spacer"></span>
         <button class="btn btn-sm" onclick="c5Decide('${draft.scenario}','rejected')">拒绝</button>

@@ -773,80 +773,39 @@ body {
 /* ============================================================
    M5 · W6 业务对账工作区
    ============================================================ */
-.w6-summary { display: grid; gap: 12px; }
+.w6-summary, .w6-cats { display: grid; gap: 12px; }
 .w6-summary { grid-template-columns: repeat(5, minmax(0,1fr)); }
-.w6-stat {
+.w6-cats { grid-template-columns: repeat(5, minmax(0,1fr)); }
+.w6-stat, .w6-cat {
   border: 1px solid var(--border); border-radius: var(--radius);
   background: #fff; padding: 12px 14px; text-align: center;
 }
 .w6-stat.accent { border-color: #fde68a; background: var(--amber-bg); }
+.w6-cat { cursor: pointer; transition: border-color .15s; }
+.w6-cat:hover { border-color: var(--primary); }
+.w6-cat.has { border-color: #fde68a; background: #FFFCF5; }
+.w6-cat .w6-num { font-size: 22px; font-weight: 700; line-height: 1.1; color: var(--muted); }
+.w6-cat.has .w6-num { color: var(--amber); }
 .w6-stat.accent .w6-num { color: var(--amber); }
 .w6-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
 @media (max-width: 1279px) {
-  .w6-summary { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .w6-summary, .w6-cats { grid-template-columns: repeat(3, minmax(0,1fr)); }
 }
 
-/* ---- W6-D 待对账数据：工单父级（整行跨列组头） + 一行一个差异对象 ----
-   列宽由 colgroup 固定 + table-layout:fixed，列与列之间不会互相挤压；
-   短值列 nowrap（超出显示省略号，完整值见 title），长文本列允许换行。
-   栅格基准宽度 984px：≥1280 档位可完整显示，更窄档位在卡片内部横向滚动。 */
-.data.w6-d { table-layout: fixed; min-width: 984px; }
-.data.w6-d th, .data.w6-d td { padding-left: 6px; padding-right: 6px; }
-.data.w6-d th:first-child, .data.w6-d td:first-child { padding-left: 14px; }
-.data.w6-d th:last-child, .data.w6-d td:last-child { padding-right: 14px; }
-.data.w6-d th, .data.w6-d td {
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-/* 长文本列允许换行；标签按整枚换行，不在标签内部断开 */
-.data.w6-d tr.w6-child td.w6-wrap { white-space: normal; }
-.data.w6-d tr.w6-child td.w6-wrap .tag { white-space: nowrap; }
-
-.data.w6-d .c-diffid { width: 158px; }
-.data.w6-d .c-obj    { width: 92px; }
-.data.w6-d .c-cat    { width: 86px; }
-.data.w6-d .c-tags   { width: 96px; }
-.data.w6-d .c-qty    { width: 74px; }
-.data.w6-d .c-amt    { width: 72px; }
-.data.w6-d .c-basis  { width: 96px; }
-.data.w6-d .c-owner  { width: 116px; }
-.data.w6-d .c-state  { width: 104px; }
-.data.w6-d .c-act    { width: 90px; }
-
-/* 小屏隐藏次要列「类型标签」（其信息是主分类的超集，可在 L4 对账阶段查看完整标签），
-   减少卡片内部横向滚动距离；八项必需列在任何宽度都保留。 */
-@media (max-width: 1099px) {
-  .data.w6-d .c-tags,
-  .data.w6-d thead th:nth-child(4),
-  .data.w6-d tbody td:nth-child(4) { display: none; }
-  .data.w6-d { min-width: 888px; }
-}
-
-/* 父级＝工单组头：整行一个 td（colspan=10），内部用弹性条排布工单级字段 */
-.data.w6-d tr.w6-parent td {
-  background: #FAFBFC; font-weight: 500; padding: 0;
+/* ---- W6-D 工单分组父级 / 差异对象子行 ---- */
+.data tr.w6-parent td {
+  background: #FAFBFC; font-weight: 500;
   border-top: 1px solid var(--border-strong);
 }
-.data.w6-d tr.w6-parent:first-child td { border-top: 0; }
-.w6-pbar {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; font-size: 12.5px; flex-wrap: wrap;
-}
-.w6-pbar > * { flex-shrink: 0; }
-.w6-pbar .spacer { flex: 1; }
-.w6-pbar .w6-pid { font-weight: 600; }
-.w6-pbar .w6-pmeta { color: var(--muted); }
-.w6-pbar .w6-psum { color: var(--muted); font-variant-numeric: tabular-nums; }
-
-.data.w6-d tr.w6-child td { background: #fff; font-size: 12.5px; padding-top: 9px; padding-bottom: 9px; }
-.data.w6-d tr.w6-child:hover td { background: var(--primary-soft); }
-.w6-indent { padding-left: 20px !important; position: relative; }
+.data tr.w6-parent:first-child td { border-top: 0; }
+.data tr.w6-child td { background: #fff; font-size: 12.5px; }
+.data tr.w6-child:hover td { background: var(--primary-soft); }
+.w6-indent { padding-left: 30px !important; position: relative; }
 .w6-indent::before {
-  content: "└"; position: absolute; left: 5px; color: var(--subtle);
+  content: "└"; position: absolute; left: 14px; color: var(--subtle);
 }
-/* 时效 / 状态：允许两行（时效在上、处理状态在下），不与其他列争宽 */
-.data.w6-d tr.w6-child td.w6-state { white-space: normal; }
-.w6-substate { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.w6-cat.on { border-color: var(--primary); background: var(--primary-soft); }
 
 /* ---- W6-E 完整双账 ---- */
 .w6e-scope { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -892,13 +851,20 @@ body {
 /* 被 W6 定位到的差异对象 */
 .task.focus { box-shadow: 0 0 0 2px var(--primary); border-color: var(--primary); }
 
+/* 子行字段自描述标签：父级表头描述工单级字段，子行自带差异对象级字段名 */
+.data tr.w6-child td[data-l]::before {
+  content: attr(data-l);
+  display: block; font-size: 10.5px; color: var(--subtle);
+  margin-bottom: 2px; letter-spacing: .02em;
+}
+.data tr.w6-child td { padding-top: 8px; padding-bottom: 8px; }
+
 /* W6 汇总带：净差额 / 差异金额规模 */
 .w6-summary { grid-template-columns: repeat(4, minmax(0,1fr)) 1.3fr 1.5fr; }
 .w6-stat.pos .w6-num, .w6-stat.neg .w6-num { color: var(--text); }
 .w6-stat .w6-sub { display: block; font-size: 10.5px; color: var(--subtle); margin-top: 3px; font-weight: 400; }
-/* 说明文字位于标签栅格之外：不参与轨道宽度计算，标签保持紧凑 */
 .w6-cats-note {
-  margin-top: 12px; font-size: 11.5px; color: var(--muted);
+  grid-column: 1 / -1; font-size: 11.5px; color: var(--muted);
   padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.7;
 }
 @media (max-width: 1279px) {
@@ -1006,7 +972,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, .clickable-link
 @media (max-width: 1279px) {
   .card-body, .card-body.tight, .stage-pane.active { overflow-x: auto; }
   .bench, .dual { overflow-x: auto; }
-  /* W6-D 列宽固定且 nowrap，宽度不足时在卡片内部横向滚动（不再隐藏列） */
+  /* W6 列表：窄屏隐藏次要列，保证关键列可读 */
+  #page-w6 .data th:nth-child(4), #page-w6 .data td:nth-child(4),
+  #page-w6 .data th:nth-child(7), #page-w6 .data td:nth-child(7) { display: none; }
   /* L3：窄屏隐藏责任岗位 */
   #page-l3 .data th:nth-child(3), #page-l3 .data td:nth-child(3) { display: none; }
   /* L1 我负责的工单：窄屏隐藏最近更新 */
@@ -1014,7 +982,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .clickable-link
 }
 @media (max-width: 1279px) {
   .action-groups { grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .w6-summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .w6-summary, .w6-cats { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
 @media (max-width: 900px) {
   .todos { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -1079,46 +1047,21 @@ button:focus-visible, select:focus-visible, input:focus-visible, .clickable-link
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px;
 }
 
-/* W6 五类：紧凑可点击筛选标签（不是大卡）
-   栅格列数决定换行点，标签本身仍按内容取宽，不拉伸成整行大卡：
-     宽屏（≥1440）5 项一行 ｜ 中屏（1100–1439）3 + 2 ｜ 小屏（<1100）自动换行 */
-.w6-cat-row {
-  display: grid; align-items: center; justify-content: start;
-  gap: 8px; grid-template-columns: repeat(5, minmax(118px, max-content));
-}
+/* W6 五类：一行可点击筛选标签 */
+.w6-cat-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .w6-cat-chip {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  display: inline-flex; align-items: center; gap: 7px;
   border: 1px solid var(--border); background: #fff; border-radius: 999px;
   padding: 6px 14px; font-family: inherit; font-size: 12.5px; color: var(--muted); cursor: pointer;
-  transition: all .15s; white-space: nowrap; min-width: 0;
+  transition: all .15s;
 }
 .w6-cat-chip:hover { border-color: var(--primary); color: var(--primary); }
 .w6-cat-chip.has { border-color: #fde68a; background: #FFFCF5; color: var(--amber); font-weight: 500; }
 .w6-cat-chip.on { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
 .w6-cat-chip b { font-size: 13.5px; }
-@media (max-width: 1439px) {
-  .w6-cat-row { grid-template-columns: repeat(3, minmax(118px, max-content)); }
-}
-@media (max-width: 1099px) {
-  .w6-cat-row { grid-template-columns: repeat(2, minmax(118px, max-content)); }
-}
+.w6-cat-row .w6-cats-note { flex-basis: 100%; margin-top: 6px; }
 
 /* L1 零任务分组：芯片行 */
 .ag-zero-row { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .ag-chip { font-size: 12px; color: var(--subtle); background: var(--gray-bg); border-radius: 999px; padding: 4px 12px; }
 .ag-chip b { color: var(--muted); margin-left: 3px; }
-
-/* ============================================================
-   L3 工单中心 · 待办列
-   「N 项」必须单行显示，不得折成上下两行；为该列保留最小宽度。
-   ============================================================ */
-#page-l3 .data th:nth-child(7),
-#page-l3 .data td:nth-child(7) { white-space: nowrap; }
-#page-l3 .data th:nth-child(7) { width: 88px; min-width: 88px; }
-#page-l3 .data td:nth-child(7) .tag-amber,
-#page-l3 .data td:nth-child(7) .tag { white-space: nowrap; }
-/* 待办列加宽后，最窄档位隐藏「最近更新」以保持卡片内部无横向滚动
-   （与 L1 表已有做法一致） */
-@media (max-width: 1099px) {
-  #page-l3 .data th:nth-child(8), #page-l3 .data td:nth-child(8) { display: none; }
-}
