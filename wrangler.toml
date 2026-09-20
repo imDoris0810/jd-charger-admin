@@ -3,5 +3,5 @@ compatibility_date = "2024-11-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "jd-charger-admin"
+database_name = "jd-charger-db"
 database_id = "307b10d0-809b-43e1-b2f5-300ff590b9dc"
