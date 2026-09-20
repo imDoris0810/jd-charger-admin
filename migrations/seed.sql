@@ -3,7 +3,7 @@
 -- 金额以「分」为单位（660 元 = 66000 分）
 -- =====================================================================
 
-INSERT INTO standard_fee_items
+INSERT OR IGNORE INTO standard_fee_items
   (name, calc_method, unit_price_cents, included_in_base_fee, is_active, remark)
 VALUES
   ('基础安装',   'fixed',     66000, 1, 1, '含入场搬运，合同基础费已含'),
